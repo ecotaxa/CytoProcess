@@ -700,6 +700,11 @@ def main(input_json, extra_data_file):
     constant_data = build_mapping_array(data, column_mapping)
     constant_extra_data = build_extra_data_array(extra_data)
     
+    # A cleaning step to remove tabs, returns and newlines. For our .cyz file (at Cefas), "UvserRemarks" contained three lines. Those \n newlines broke the pipeline and created a tsv that ecotaxa would not accept. For now, only apply this check to text in the UserRemarks object
+    name_idx = {m["name"]: i for i, m in enumerate([m for m in column_mapping.values() if m.get("name")])}
+    if (idx := name_idx.get("object_UvserRemarks")) is not None:
+       constant_data[idx] = f'"{constant_data[idx].strip("\"").replace("\r"," ").replace("\n"," ").replace("\t"," ")}"'
+    
     for particle in data["particles"]:
         if not particle["hasImage"]:
             continue  # Ignore particles without image
