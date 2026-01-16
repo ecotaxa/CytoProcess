@@ -36,7 +36,7 @@ column_mapping = {
     "instrument.measurementSettings.CytoSettings.IIFCheck": { "name": "sample_IIFCheck", "type": "[t]", "transform": lambda v: "true" if v else "false" },
     "instrument.measurementSettings.CytoSettings.PMTlevels_str": { "name": "sample_PMTlevels_str", "type": "[t]" },
     "instrument.measurementSettings.CytoSettings.PMTLevelPreset": { "name": "sample_PMTLevelPreset", "type": "[t]" },
-    "instrument.measurementSettings.CytoSettings.UserRemarks": { "name": "object_UvserRemarks", "type": "[f]" },
+    "instrument.measurementSettings.CytoSettings.UserRemarks": { "name": "object_UvserRemarks", "type": "[t]" },
     "instrument.measurementSettings.CytoSettings.SeperateConcentration": { "name": "sample_SeperateConcentration", "type": "[t]", "transform": lambda v: "true" if v else "false" },
     "instrument.measurementSettings.CytoSettings.MeasureNoiseLevels": { "name": "sample_MeasureNoiseLevels", "type": "[t]", "transform": lambda v: "true" if v else "false" },
     "instrument.measurementSettings.CytoSettings.CalibrateCamera": { "name": "sample_CalibrateCamera", "type": "[t]", "transform": lambda v: "true" if v else "false" },
