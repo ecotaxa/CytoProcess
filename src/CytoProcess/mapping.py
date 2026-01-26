@@ -1,11 +1,11 @@
 # from .transform_function import *
-# from cytosense_to_ecotaxa_pipeline.transform_function import *
+# from CytoProcess.transform_function import *
 try:
     # Essayer d'abord l'importation relative (fonctionne lors du développement)
     from .transform_function import remove_extension, extract_date_utc, extract_time_utc, extract_commit_version #,search_pulse_shapes
 except ImportError:
     # Si ça échoue, essayer l'importation absolue (fonctionne après installation)
-    from cytosense_to_ecotaxa_pipeline.transform_function import *
+    from CytoProcess.transform_function import *
 
 column_mapping = {
     # "filename": { "name": "sample_filename", "type": "[t]", "transform": None },

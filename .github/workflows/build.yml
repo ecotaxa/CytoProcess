@@ -51,21 +51,21 @@ jobs:
       - name: Prepare package structure
         run: |
           # Ensure the package structure exists
-          mkdir -p src/cytosense_to_ecotaxa_pipeline/bin
+          mkdir -p src/CytoProcess/bin
           
           # Extract platform-specific binaries
           unzip -o "downloads/cyz2json-${{ matrix.cyz2json_platform }}-latest.zip" \
-                -d src/cytosense_to_ecotaxa_pipeline/bin/
+                -d src/CytoProcess/bin/
           
           # Set executable permissions if not Windows
           if [ "${{ matrix.platform }}" != "windows" ]; then
-            chmod +x src/cytosense_to_ecotaxa_pipeline/bin/${{ matrix.binary_name }}
+            chmod +x src/CytoProcess/bin/${{ matrix.binary_name }}
           fi
           
       - name: Verify package structure
         run: |
           echo "Package structure:"
-          find src/cytosense_to_ecotaxa_pipeline -type f
+          find src/CytoProcess -type f
 
       - name: List contents
         run:
@@ -75,13 +75,13 @@ jobs:
         run:
           ls -la src/*
   
-      - name: List contents src/cytosense_to_ecotaxa_pipeline
+      - name: List contents src/CytoProcess
         run:
-          ls -la src/cytosense_to_ecotaxa_pipeline/*
+          ls -la src/CytoProcess/*
     
       - name: List contents of bin directory
         run:
-          ls -la src/cytosense_to_ecotaxa_pipeline/bin/*
+          ls -la src/CytoProcess/bin/*
 
           
       - name: Install build tools

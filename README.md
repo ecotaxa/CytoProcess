@@ -1,6 +1,6 @@
 # CytoProcess: Cytosense to EcoTaxa pipeline
 
-<img src="https://github.com/ecotaxa/cytosense_to_ecotaxa_pipeline/actions/workflows/build.yml/badge.svg" alt="Build cytosense_to_ecotaxa_pipeline"/>
+<img src="https://github.com/ecotaxa/CytoProcess/actions/workflows/build.yml/badge.svg" alt="Build CytoProcess"/>
 
 
 A pipeline tool to convert Cytosense data files to EcoTaxa compatible format.
@@ -22,7 +22,7 @@ Recommended way to install the pipeline is to use the install.sh script.
 You just need to download the install.sh file from the repository. Run it with the following commands:
 
 ```bash
-curl -L -O "https://raw.githubusercontent.com/ecotaxa/cytosense_to_ecotaxa_pipeline/main/install.sh"
+curl -L -O "https://raw.githubusercontent.com/ecotaxa/CytoProcess/main/install.sh"
 chmod +x install.sh
 sudo ./install.sh --github
 ```
@@ -41,21 +41,21 @@ pip intall -e .
 pip install six matplotlib Pillow numpy
 
 # necessary to install the cyz2json binary but need to copy the main.py and/or pipeline.py files in the venv
-# LATEST_TAG=$(curl -s "https://api.github.com/repos/ecotaxa/cytosense_to_ecotaxa_pipeline/releases/latest" | jq -r '.tag_name')
+# LATEST_TAG=$(curl -s "https://api.github.com/repos/ecotaxa/CytoProcess/releases/latest" | jq -r '.tag_name')
 # TAG_WITHOUT_V="${LATEST_TAG#v}"
 # PLATFORM_TAG="macosx_10_9_x86_64"
 # PLATFORM_TAG="macosx_11_0_arm64"
-# WHEEL_FILE_NAME="cytosense_to_ecotaxa_pipeline-${TAG_WITHOUT_V}-py3-none-${PLATFORM_TAG}.whl"
-# WHEEL_URL="https://github.com/ecotaxa/cytosense_to_ecotaxa_pipeline/releases/download/${LATEST_TAG}/${WHEEL_FILE_NAME}"
+# WHEEL_FILE_NAME="CytoProcess-${TAG_WITHOUT_V}-py3-none-${PLATFORM_TAG}.whl"
+# WHEEL_URL="https://github.com/ecotaxa/CytoProcess/releases/download/${LATEST_TAG}/${WHEEL_FILE_NAME}"
 # WHEEL_FILE="/tmp/${WHEEL_FILE_NAME}"
 # curl -s -L "$WHEEL_URL" -o "$WHEEL_FILE"
 # pip install "$WHEEL_FILE"
 # SITE_PACKAGES_PATH=$(python -c "import site; print(site.getsitepackages()[0])")
-# sudo ln -s "$SITE_PACKAGES_PATH/cytosense_to_ecotaxa_pipeline/bin/Cyz2Json" $PWD/test_venv/bin/Cyz2Json
-# sudo ln -s "$SITE_PACKAGES_PATH/cytosense_to_ecotaxa_pipeline/pipeline.py" $PWD/test_venv/bin/pipeline.py
-# sudo ln -s "$SITE_PACKAGES_PATH/cytosense_to_ecotaxa_pipeline/main.py" $PWD/test_venv/bin/main.py
-# export LD_LIBRARY_PATH=$PWD/test_venv/lib/python${PYTHON_VERSION}/site-packages/cytosense_to_ecotaxa_pipeline/lib:${LD_LIBRARY_PATH}
-# sudo chmod ago+x $PWD/test_venv/lib/python${PYTHON_VERSION}/site-packages/cytosense_to_ecotaxa_pipeline/bin/*
+# sudo ln -s "$SITE_PACKAGES_PATH/CytoProcess/bin/Cyz2Json" $PWD/test_venv/bin/Cyz2Json
+# sudo ln -s "$SITE_PACKAGES_PATH/CytoProcess/pipeline.py" $PWD/test_venv/bin/pipeline.py
+# sudo ln -s "$SITE_PACKAGES_PATH/CytoProcess/main.py" $PWD/test_venv/bin/main.py
+# export LD_LIBRARY_PATH=$PWD/test_venv/lib/python${PYTHON_VERSION}/site-packages/CytoProcess/lib:${LD_LIBRARY_PATH}
+# sudo chmod ago+x $PWD/test_venv/lib/python${PYTHON_VERSION}/site-packages/CytoProcess/bin/*
 
 # without cyz2json binary
 # make data folder
@@ -81,7 +81,7 @@ When you use manual build: you need to bypass security
 You have 2 possibilities :
 using xattr command.
 ```
-xattr -d com.apple.quarantine  /opt/cytosense_to_ecotaxa_pipeline/bin/*
+xattr -d com.apple.quarantine  /opt/CytoProcess/bin/*
 ```
 or if you do not want use xattr you need to go in Systems Settings > Security & Privacy > General and allow the app to be opened for the 10+ libraries. You need to relauch sevaral time the cyz2json binary to acheive all neccessary permissions.
 
@@ -90,7 +90,7 @@ or if you do not want use xattr you need to go in Systems Settings > Security & 
 
 ## using the command installed by the install.sh script
 ```bash
-/usr/local/bin/cytosense_to_ecotaxa_pipeline the_cyz_files_to_import.tsv
+/usr/local/bin/CytoProcess the_cyz_files_to_import.tsv
 ```
 the result will be in the the folder where you run the command
 you will find
@@ -102,8 +102,8 @@ a folder named extra_data will be create with the extra data json files
 
 ## run pipeline.py
 ```
-cd src/cytosense_to_ecotaxa_pipeline
-ln -s /opt/cytosense_to_ecotaxa_pipeline_venv/bin/Cyz2Json cyz2json
+cd src/CytoProcess
+ln -s /opt/CytoProcess_venv/bin/Cyz2Json cyz2json
 (venv) python pipeline.py the_cyz_files_to_import.tsv
 ```
 
@@ -135,7 +135,7 @@ docker build -t cyto2eco .
 
 ## run the container
 ```
-docker run -v /Users/sebastiengalvagno/Work/cytosense_to_ecotaxa_pipeline/data:/data -v /Users/sebastiengalvagno/Work/cytosense_to_ecotaxa_pipeline/src/cytosense_to_ecotaxa_pipeline/extra_data:/extra cyto2eco /data/Deployment\ 1\ 2024-07-18\ 21h12.json --extra /extra/Deployment\ 1\ 2024-07-18\ 21h12.json --bioODV=False
+docker run -v /Users/sebastiengalvagno/Work/CytoProcess/data:/data -v /Users/sebastiengalvagno/Work/CytoProcess/src/CytoProcess/extra_data:/extra cyto2eco /data/Deployment\ 1\ 2024-07-18\ 21h12.json --extra /extra/Deployment\ 1\ 2024-07-18\ 21h12.json --bioODV=False
 ```
 
 # Build
@@ -149,8 +149,8 @@ git tag v0.0.65 && git push origin v0.0.65
 ```
 the action will build the binary and push it to the release
 
-You will find result in : https://github.com/ecotaxa/cytosense_to_ecotaxa_pipeline/actions
-and release in : https://github.com/ecotaxa/cytosense_to_ecotaxa_pipeline/releases
+You will find result in : https://github.com/ecotaxa/CytoProcess/actions
+and release in : https://github.com/ecotaxa/CytoProcess/releases
 
 <!--
 # Bug

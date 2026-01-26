@@ -7,19 +7,19 @@ platform = os.getenv('PLATFORM', 'unknown')
 version = os.environ.get('GITHUB_REF_NAME', 'v1.1.0').replace('v', '')
 
 setup(
-    name=f'cytosense_to_ecotaxa_pipeline-{platform}',
+    name=f'CytoProcess-{platform}',
     version=version,
     packages=find_packages(where="src"),
     package_dir={"": "src"}, 
     package_data={
-        # 'cytosense_to_ecotaxa_pipeline': ['bin/cyz2json*'],  # Include all cyz2json binaries
-        'cytosense_to_ecotaxa_pipeline': ['bin/*'],
+        # 'CytoProcess': ['bin/cyz2json*'],  # Include all cyz2json binaries
+        'CytoProcess': ['bin/*'],
 
     },
     include_package_data=True,  # Ensure package_data is included
     entry_points={
         'console_scripts': [
-            'cytosense-to-ecotaxa=cytosense_to_ecotaxa_pipeline.main:cli_main',
+            'cytosense-to-ecotaxa=CytoProcess.main:cli_main',
 
         ],
     },

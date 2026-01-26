@@ -7,11 +7,11 @@ if (-Not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 }
 
 
-$latestTag = (Invoke-WebRequest -Uri "https://api.github.com/repos/ecotaxa/cytosense_to_ecotaxa_pipeline/releases/latest" | ConvertFrom-Json).tag_name
+$latestTag = (Invoke-WebRequest -Uri "https://api.github.com/repos/ecotaxa/CytoProcess/releases/latest" | ConvertFrom-Json).tag_name
 $tagWithoutV = $latestTag -replace "^v", ""
 
-$wheelFileName = "cytosense_to_ecotaxa_pipeline-${tagWithoutV}-py3-none-${platformTag}.whl"
-  $wheelUrl = "https://github.com/ecotaxa/cytosense_to_ecotaxa_pipeline/releases/download/${latestTag}/${wheelFileName}"
+$wheelFileName = "CytoProcess-${tagWithoutV}-py3-none-${platformTag}.whl"
+  $wheelUrl = "https://github.com/ecotaxa/CytoProcess/releases/download/${latestTag}/${wheelFileName}"
 
   # Some debug messages
   Write-Host "System architecture: $arch"
@@ -38,10 +38,10 @@ $wheelFileName = "cytosense_to_ecotaxa_pipeline-${tagWithoutV}-py3-none-${platfo
       exit 1
 
 # Create virtual environment
-python -m venv $env:LOCALAPPDATA\cytosense_to_ecotaxa_pipeline_venv
+python -m venv $env:LOCALAPPDATA\CytoProcess_venv
 
 # Activate virtual environment
-& "$env:LOCALAPPDATA\cytosense_to_ecotaxa_pipeline_venv\Scripts\Activate.ps1"
+& "$env:LOCALAPPDATA\CytoProcess_venv\Scripts\Activate.ps1"
 
 # Install Python packages within the virtual environment
 # pip install -r requirements.txt
@@ -49,7 +49,7 @@ python -m venv $env:LOCALAPPDATA\cytosense_to_ecotaxa_pipeline_venv
 pip install $wheelFile
 
 # Create installation directory
-$installDir = "$env:ProgramFiles\cytosense_to_ecotaxa_pipeline"
+$installDir = "$env:ProgramFiles\CytoProcess"
 New-Item -ItemType Directory -Path $installDir -Force
 
 # Get Python executable path within the virtual environment
@@ -59,11 +59,11 @@ $pythonExec = (Get-Command python).Source
 $sitePackagesPath = & python -c "import site; print(site.getsitepackages()[0])"
 
 # Copy files to the installation directory
-# Copy-Item -Path "$sitePackagesPath\cytosense_to_ecotaxa_pipeline\bin\Cyz2Json.exe" -Destination "$installDir\Cyz2Json.exe"
-Copy-Item -Path "$sitePackagesPath\cytosense_to_ecotaxa_pipeline\bin" -Destination "$installDir\bin" -Recurse -Force
-Copy-Item -Path "$sitePackagesPath\cytosense_to_ecotaxa_pipeline\pipeline.py" -Destination "$installDir\pipeline.py"
-Copy-Item -Path "$sitePackagesPath\cytosense_to_ecotaxa_pipeline\convert.py" -Destination "$installDir\convert.py"
-Copy-Item -Path "$sitePackagesPath\cytosense_to_ecotaxa_pipeline\main.py" -Destination "$installDir\main.py"
+# Copy-Item -Path "$sitePackagesPath\CytoProcess\bin\Cyz2Json.exe" -Destination "$installDir\Cyz2Json.exe"
+Copy-Item -Path "$sitePackagesPath\CytoProcess\bin" -Destination "$installDir\bin" -Recurse -Force
+Copy-Item -Path "$sitePackagesPath\CytoProcess\pipeline.py" -Destination "$installDir\pipeline.py"
+Copy-Item -Path "$sitePackagesPath\CytoProcess\convert.py" -Destination "$installDir\convert.py"
+Copy-Item -Path "$sitePackagesPath\CytoProcess\main.py" -Destination "$installDir\main.py"
 
 
 
@@ -71,8 +71,8 @@ Copy-Item -Path "$sitePackagesPath\cytosense_to_ecotaxa_pipeline\main.py" -Desti
 # Cyz2Json.bat
 @"
 @echo off
-"$env:LOCALAPPDATA\cytosense_to_ecotaxa_pipeline_venv\Scripts\python.exe" "$installDir\pipeline.py" %*
-"@ | Out-File -Encoding ascii "$installDir\cytosense_to_ecotaxa_pipeline.bat"
+"$env:LOCALAPPDATA\CytoProcess_venv\Scripts\python.exe" "$installDir\pipeline.py" %*
+"@ | Out-File -Encoding ascii "$installDir\CytoProcess.bat"
 
 
 # Add installation directory to PATH

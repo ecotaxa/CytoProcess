@@ -3,7 +3,7 @@ requires = ["setuptools>=64.0", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cytosense_to_ecotaxa_pipeline"
+name = "CytoProcess"
 dynamic = ["version"]
 description = "A pipeline to import Cytosense data into Ecotaxa"
 authors = [{name = "Sebastien Galvagno", email = "sebastien.galvagno@imev-mer.fr"}]
@@ -21,14 +21,14 @@ dependencies = [
 ]
 
 [project.scripts]
-cytosense_to_ecotaxa_pipeline = "cytosense_to_ecotaxa_pipeline.pipeline:main_cli"
+CytoProcess = "CytoProcess.pipeline:main_cli"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = ["cytosense_to_ecotaxa_pipeline"]
+packages = ["CytoProcess"]
 
 [tool.setuptools.package-data]
-"cytosense_to_ecotaxa_pipeline" = [
+"CytoProcess" = [
     "bin/*",
     "*.py"
 ]

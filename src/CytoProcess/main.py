@@ -6,22 +6,22 @@ from zipfile import ZipFile
 from PIL import Image
 # from .transform_function import *
 # from .mapping import column_mapping
-# from cytosense_to_ecotaxa_pipeline.transform_function import *
-# from cytosense_to_ecotaxa_pipeline.mapping import column_mapping
+# from CytoProcess.transform_function import *
+# from CytoProcess.mapping import column_mapping
 
 try:
     # Essayer d'abord l'importation relative (fonctionne lors du développement)
     from .transform_function import *
 except ImportError:
     # Si ça échoue, essayer l'importation absolue (fonctionne après installation)
-    from cytosense_to_ecotaxa_pipeline.transform_function import *
+    from CytoProcess.transform_function import *
 
 try:
     # Essayer d'abord l'importation relative (fonctionne lors du développement)
     from .mapping import column_mapping, particles_parameters, channel_parameters, particule_features
 except ImportError:
     # Si ça échoue, essayer l'importation absolue (fonctionne après installation)
-    from cytosense_to_ecotaxa_pipeline.mapping import column_mapping, particles_parameters, particule_features
+    from CytoProcess.mapping import column_mapping, particles_parameters, particule_features
 
 
 
