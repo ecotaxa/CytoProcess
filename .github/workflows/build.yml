@@ -135,6 +135,6 @@ jobs:
           context: .
           push: true
           tags: |
-            ecotaxa/cytosense_to_ecotaxa:latest
-            ecotaxa/cytosense_to_ecotaxa:${{ github.ref_name }}
+            ecotaxa/CytoProcess:latest
+            ecotaxa/CytoProcess:${{ github.ref_name }}
             
