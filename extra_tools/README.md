@@ -22,18 +22,18 @@ I added 3 optional columns for manage the bioODV relation. The column are:
 + The column "bioODV.units" is the unit of measurement following the BioODV convention
 The script update_tsv.py generate the file : features_metadata_cytometry - SSLAMM_micro_setdef_CS101 - collab update.csv
 
-Before next step, you could change all the data. change name, choose transform function if need, fill bioODV columns. You will need to add your function in src/cytosense_to_ecotaxa_pipeline/transform_function.py file.
+Before next step, you could change all the data. change name, choose transform function if need, fill bioODV columns. You will need to add your function in src/CytoProcess/transform_function.py file.
 
 Be careful, if you relauch the script data will be overwritten.
 Be careful, if you relauch the script data will be overwritten.
 
 ## generate code for python
 
-The script generate_mapping.py is used to generate the mapping.py file.  mapping.py file will be use in the cytosense_to_ecotaxa_pipeline to convert your cyz file in ecotaxa tsv file.
+The script generate_mapping.py is used to generate the mapping.py file.  mapping.py file will be use in the CytoProcess to convert your cyz file in ecotaxa tsv file.
 
 ## Update the pipeline
 
-You need to manually copy mapping.py into src/cytosense_to_ecotaxa_pipeline folder.
+You need to manually copy mapping.py into src/CytoProcess folder.
 At the point followed the intruction to rebuild your new pipeline version.
 
 

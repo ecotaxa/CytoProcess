@@ -51,21 +51,21 @@ jobs:
       - name: Prepare package structure
         run: |
           # Ensure the package structure exists
-          mkdir -p src/cytosense_to_ecotaxa_pipeline/bin
+          mkdir -p src/CytoProcess/bin
           
           # Extract platform-specific binaries
           unzip -o "downloads/cyz2json-${{ matrix.cyz2json_platform }}-latest.zip" \
-                -d src/cytosense_to_ecotaxa_pipeline/bin/
+                -d src/CytoProcess/bin/
           
           # Set executable permissions if not Windows
           if [ "${{ matrix.platform }}" != "windows" ]; then
-            chmod +x src/cytosense_to_ecotaxa_pipeline/bin/${{ matrix.binary_name }}
+            chmod +x src/CytoProcess/bin/${{ matrix.binary_name }}
           fi
           
       - name: Verify package structure
         run: |
           echo "Package structure:"
-          find src/cytosense_to_ecotaxa_pipeline -type f
+          find src/CytoProcess -type f
 
       - name: List contents
         run:
@@ -75,13 +75,13 @@ jobs:
         run:
           ls -la src/*
   
-      - name: List contents src/cytosense_to_ecotaxa_pipeline
+      - name: List contents src/CytoProcess
         run:
-          ls -la src/cytosense_to_ecotaxa_pipeline/*
+          ls -la src/CytoProcess/*
     
       - name: List contents of bin directory
         run:
-          ls -la src/cytosense_to_ecotaxa_pipeline/bin/*
+          ls -la src/CytoProcess/bin/*
 
           
       - name: Install build tools
@@ -123,18 +123,33 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       
+      - name: Check for Docker Hub secrets
+        id: check_secrets
+        run: |
+          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ] || [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "secrets_present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "secrets_present=true" >> "$GITHUB_OUTPUT"
+          fi
+      
       - name: Login to Docker Hub
+        if: steps.check_secrets.outputs.secrets_present == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
+      - name: Skip Docker publish (no secrets)
+        if: steps.check_secrets.outputs.secrets_present != 'true'
+        run: |
+          echo "DOCKERHUB_USERNAME or DOCKERHUB_TOKEN not set — skipping Docker login & push."
+      
       - name: Build and push Docker image
+        if: steps.check_secrets.outputs.secrets_present == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: |
-            ecotaxa/cytosense_to_ecotaxa:latest
-            ecotaxa/cytosense_to_ecotaxa:${{ github.ref_name }}
-            
+            ecotaxa/CytoProcess:latest
+            ecotaxa/CytoProcess:${{ github.ref_name }}
