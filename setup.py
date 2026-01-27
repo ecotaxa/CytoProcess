@@ -19,7 +19,7 @@ setup(
     include_package_data=True,  # Ensure package_data is included
     entry_points={
         'console_scripts': [
-            'cytosense-to-ecotaxa=CytoProcess.main:cli_main',
+            'cytoprocess=CytoProcess.main:cli_main',
 
         ],
     },
