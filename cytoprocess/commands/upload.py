@@ -11,10 +11,8 @@ from cytoprocess.utils import setup_logging, log_command_start, log_command_succ
 ECOTAXA_API_URL = "https://ecotaxa.obs-vlfr.fr/api"
 KEYRING_SERVICE = "cytoprocess-ecotaxa"
 
-logger = logging.getLogger("cytoprocess.upload")
 
-
-def _get_stored_token():
+def _get_stored_token(logger: logging.Logger) -> str | None:
     """Retrieve stored token from keyring."""
     try:
         return keyring.get_password(KEYRING_SERVICE, "token")
@@ -23,7 +21,7 @@ def _get_stored_token():
         return None
 
 
-def _store_token(token: str):
+def _store_token(logger: logging.Logger, token: str) -> bool:
     """Store token in keyring."""
     try:
         keyring.set_password(KEYRING_SERVICE, "token", token)
@@ -33,7 +31,7 @@ def _store_token(token: str):
         return False
 
 
-def _clear_token():
+def _clear_token(logger: logging.Logger) -> None:
     """Clear stored token from keyring."""
     try:
         keyring.delete_password(KEYRING_SERVICE, "token")
@@ -41,7 +39,7 @@ def _clear_token():
         pass
 
 
-def _validate_token(token: str) -> bool:
+def _validate_token(logger: logging.Logger, token: str) -> bool:
     """Check if the token is still valid by calling /users/me."""
     try:
         response = requests.get(
@@ -54,7 +52,7 @@ def _validate_token(token: str) -> bool:
         return False
 
 
-def _login(username: str, password: str) -> str | None:
+def _login(logger: logging.Logger, username: str, password: str) -> str | None:
     """
     Authenticate with EcoTaxa API and return JWT token.
     
@@ -77,7 +75,7 @@ def _login(username: str, password: str) -> str | None:
         return None
 
 
-def _get_user_info(token: str) -> dict | None:
+def _get_user_info(logger: logging.Logger, token: str) -> dict | None:
     """Get current user information."""
     try:
         response = requests.get(
@@ -92,7 +90,7 @@ def _get_user_info(token: str) -> dict | None:
         return None
 
 
-def _get_project_info(token: str, project_id: int) -> dict | None:
+def _get_project_info(logger: logging.Logger, token: str, project_id: int) -> dict | None:
     """
     Get project information from EcoTaxa.
     
@@ -122,7 +120,7 @@ def _get_project_info(token: str, project_id: int) -> dict | None:
         return None
 
 
-def _get_project_samples(token: str, project_id: int) -> set[str]:
+def _get_project_samples(logger: logging.Logger, token: str, project_id: int) -> set[str]:
     """
     Get the set of sample IDs that exist in an EcoTaxa project.
     
@@ -152,7 +150,7 @@ def _get_project_samples(token: str, project_id: int) -> set[str]:
         return set()
 
 
-def authenticate(username: str | None = None, password: str | None = None) -> str | None:
+def authenticate(logger: logging.Logger, username: str | None = None, password: str | None = None) -> str | None:
     """
     Authenticate with EcoTaxa API.
     
@@ -167,15 +165,15 @@ def authenticate(username: str | None = None, password: str | None = None) -> st
         JWT token if authentication successful, None otherwise.
     """
     # Try stored token first
-    token = _get_stored_token()
-    if token and _validate_token(token):
-        user_info = _get_user_info(token)
+    token = _get_stored_token(logger)
+    if token and _validate_token(logger, token):
+        user_info = _get_user_info(logger, token)
         if user_info:
             logger.info(f"Authenticated as: {user_info.get('name', 'Unknown')} ({user_info.get('email', 'Unknown')})")
         return token
     elif token:
-        logger.info("Stored token is invalid, need to re-authenticate")
-        _clear_token()
+        logger.warning("Stored token is invalid, need to re-authenticate")
+        _clear_token(logger)
     
     # Use provided credentials or prompt
     if not username:
@@ -190,23 +188,23 @@ def authenticate(username: str | None = None, password: str | None = None) -> st
         raiseCytoError("EcoTaxa password is required", logger)
     
     # Attempt login
-    token = _login(username, password)
+    token = _login(logger, username, password)
     if token is None:
         raiseCytoError("Authentication failed. Please check your EcoTaxa username and password.", logger)
     
     # Store the token
-    if _store_token(token):
+    if _store_token(logger, token):
         logger.info("Authentication token stored securely in system keyring")
     
     # Show user info
-    user_info = _get_user_info(token)
+    user_info = _get_user_info(logger, token)
     if user_info:
-        print(f"\nAuthenticated as: {user_info.get('email', 'Unknown')}")
+        logger.info(f"Authenticated as: {user_info.get('name', 'Unknown')} ({user_info.get('email', 'Unknown')})")
     
     return token
 
 
-def upload_file(token: str, zip_path: Path, timeout: int = 300) -> dict:
+def upload_file(logger: logging.Logger, token: str, zip_path: Path, timeout: int = 300) -> dict:
     """
     Upload a zip file to EcoTaxa user's file area.
     
@@ -219,9 +217,9 @@ def upload_file(token: str, zip_path: Path, timeout: int = 300) -> dict:
         Dictionary with 'server_path' if successful, or 'errors' list if failed.
     """
     if not zip_path.exists():
-        return {"errors": [f"File not found: {zip_path}"]}
+        raiseCytoError(f"File not found: {zip_path}", logger)
     
-    logger.info(f"Uploading '{zip_path.name}' to EcoTaxa...")
+    logger.debug(f"Uploading '{zip_path.name}'")
     
     try:
         # NB: upload is a synchronous operation now, not a job
@@ -235,17 +233,17 @@ def upload_file(token: str, zip_path: Path, timeout: int = 300) -> dict:
             )
         
         if response.status_code != 200:
-            return {"errors": [f"File upload failed: {response.text}"]}
+            raiseCytoError(f"File upload failed: {response.text}", logger)
         
         server_path = response.json()
-        logger.info(f"File uploaded to: {server_path}")
+        logger.debug(f"File uploaded to: {server_path}")
         return {"server_path": server_path}
         
     except requests.RequestException as e:
-        return {"errors": [f"File upload failed: {e}"]}
+        raiseCytoError(f"File upload failed: {e}", logger)
 
 
-def import_file(token: str, project_id: int, server_path: str) -> dict:
+def import_file(logger: logging.Logger, token: str, project_id: int, server_path: str) -> dict:
     """
     Start an import job for a file already uploaded to EcoTaxa.
     
@@ -280,16 +278,16 @@ def import_file(token: str, project_id: int, server_path: str) -> dict:
         if response.status_code == 200:
             result = response.json()
             if result.get("job_id", 0) > 0:
-                logger.info(f"Import job created: {result['job_id']}")
+                logger.debug(f"Import job created: {result['job_id']}")
             return result
         else:
-            return {"errors": [f"Import failed: {response.text}"]}
+            raiseCytoError(f"Import failed: {response.text}", logger)
             
     except requests.RequestException as e:
-        return {"errors": [f"Import request failed: {e}"]}
+        raiseCytoError(f"Import request failed: {e}", logger)
 
 
-def get_job(token: str, job_id: int) -> dict | None:
+def get_job(logger: logging.Logger, token: str, job_id: int) -> dict | None:
     """
     Get job status from EcoTaxa API.
     
@@ -313,7 +311,7 @@ def get_job(token: str, job_id: int) -> dict | None:
         return None
 
 
-def monitor_job(token: str, job_id: int, poll_interval: float = 2.0) -> bool:
+def monitor_job(logger: logging.Logger, token: str, job_id: int, poll_interval: float = 2.0) -> bool:
     """
     Monitor a job until it completes.
     
@@ -327,7 +325,7 @@ def monitor_job(token: str, job_id: int, poll_interval: float = 2.0) -> bool:
     """    
     last_progress = -1
     while True:
-        job_info = get_job(token, job_id)
+        job_info = get_job(logger, token, job_id)
         if job_info is None:
             logger.error("Failed to get job status")
             return False
@@ -344,7 +342,7 @@ def monitor_job(token: str, job_id: int, poll_interval: float = 2.0) -> bool:
         # Check terminal states
         # P: Pending, R: Running, A: Asking, E: Error, F: Finished
         if state == "F":
-            logger.info("Job completed successfully")
+            logger.debug("Job completed successfully")
             return True
         elif state == "E":
             errors = job_info.get("errors", [])
@@ -385,7 +383,7 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
     ecotaxa_dir = project / "ecotaxa"
 
     # Authenticate
-    token = authenticate(username=username, password=password)
+    token = authenticate(logger, username=username, password=password)
     if token is None:
         raiseCytoError("Authentication failed, cannot proceed with upload", logger)
     
@@ -397,7 +395,7 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
     logger.info(f"Found {len(zip_files)} zip file(s) to upload")
     
     # Get and display project name
-    project_info = _get_project_info(token, project_id)
+    project_info = _get_project_info(logger, token, project_id)
     if project_info:
         project_name = project_info.get("title", "Unknown")
     else:
@@ -406,7 +404,7 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
     logger.info(f"Uploading to EcoTaxa project '{project_name}' [{project_id}]")
     
     # Get existing samples in the project
-    existing_samples = _get_project_samples(token, project_id)
+    existing_samples = _get_project_samples(logger, token, project_id)
     logger.debug(f"Found {len(existing_samples)} existing sample(s) in project")
     
     # Process each zip file: upload, import, and monitor until complete
@@ -421,8 +419,8 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
             continue
         
         # Upload
-        upload_result = upload_file(token, zip_path, timeout=ecotaxa_config.get("upload_timeout_seconds", 300))
         logger.info(f"  Uploading '{zip_path.name}' ({format_file_size(zip_path.stat().st_size)})...")
+        upload_result = upload_file(logger, token, zip_path, timeout=ecotaxa_config.get("upload_timeout_seconds", 300))
         logger.debug(f"Upload result: {upload_result}")
         
         if upload_result.get("errors"):
@@ -441,7 +439,7 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
         # Import
         logger.debug(f"Importing {sample_id}")
         server_directory = Path(server_path).stem
-        import_result = import_file(token, project_id, server_directory)
+        import_result = import_file(logger, token, project_id, server_directory)
         logger.debug(f"Import result: {import_result}")
         
         if import_result.get("errors"):
@@ -457,7 +455,7 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
         logger.info(f"  Import started (job ID: {job_id}), monitoring progress...")
         
         # Monitor job until completion
-        success = monitor_job(token, job_id)
+        success = monitor_job(logger, token, job_id)
         if success:
             logger.info(f"  ✓ Import completed")
         else:
