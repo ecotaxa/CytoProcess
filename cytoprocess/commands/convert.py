@@ -44,7 +44,7 @@ def run(ctx, project, force=False):
         
         # Skip if JSON file already exists and force is not enabled
         if json_file.exists() and not force:
-            logger.info(f"Skipping '{cyz_file.name}', json file already exists (use --force to overwrite)")
+            logger.info(f"Skipping\n  '{cyz_file.name}'\n  json file already exists (use --force to overwrite)")
             continue
         
         logger.info(f"Converting\n  'raw/{cyz_file.name}' →\n  'converted/{json_file.name}'")
