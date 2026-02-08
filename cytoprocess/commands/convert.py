@@ -63,7 +63,12 @@ def run(ctx, project, force=False):
                 capture_output=True,
                 text=True
             )
-            logger.debug(f"Successfully converted '{cyz_file.name}'")
+            # NB: we cannot trust result.returncode which is always 0 even when the conversion fails
+            if result.stderr == '':
+                logger.debug(f"Successfully converted '{cyz_file.name}'")
+            else:
+                logger.error(f"Conversion of '{cyz_file.name}' failed, see log for details")
+                logger.debug(f"Cyz2Json output:\n{result.stdout}\n{result.stderr}")
         except subprocess.CalledProcessError as e:
             raiseCytoError(f"Failed to convert '{cyz_file.name}': {e.stderr}", logger)
         except Exception as e:
