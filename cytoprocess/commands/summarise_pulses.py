@@ -63,14 +63,14 @@ def run(ctx, project, n_poly=10, force=False):
         sample_id = json_file.stem
         output_file = work_dir / f"{sample_id}_pulses.parquet"
         
+        logger.info(f"'{json_file.stem}'")
+
         # Skip if output file exists and force is not set
         if output_file.exists() and not force:
-            logger.info(f"Skipping '{json_file.name}', output file already exists (use --force to overwrite)")
+            logger.info(f"  Skipping, output file already exists (use --force to overwrite)")
             continue
         
         try:
-            logger.debug(f"Extracting pulse shapes from '{json_file.name}'")
-            
             # Load the particles section of the json file
             particles_data = get_json_section(json_file, 'particles', logger)
 
@@ -135,7 +135,7 @@ def run(ctx, project, n_poly=10, force=False):
             df = df.sort_values('object_id').reset_index(drop=True)
             df.to_parquet(output_file, index=False)
             
-            logger.info(f"Saved {df.shape[0]} particles to '{output_file}'")
+            logger.info(f"  Saved {df.shape[0]} particles to\n  '{output_file}'")
             
         except Exception as e:
             raiseCytoError(f"Error processing '{json_file.name}': {e}", logger)

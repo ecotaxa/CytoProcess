@@ -146,7 +146,7 @@ def run(ctx, project, list_keys=False, force=False):
     
     else:
         # Normal operation: extract cytometric features based on config.yaml
-        
+
         config_file = Path(project) / "config" / "config.yaml"
         logger.info(f"Read selected cytometric features list from '{config_file}'")
         
@@ -170,15 +170,15 @@ def run(ctx, project, list_keys=False, force=False):
         for json_file in json_files:
             sample_id = json_file.stem
             output_file = work_dir / f"{sample_id}_cytometric_features.parquet"
-            
+
+            logger.info(f"'{json_file.stem}'")
+           
             # Skip if output file exists and force is not set
             if output_file.exists() and not force:
-                logger.info(f"Skipping '{json_file.name}', output file already exists (use --force to overwrite)")
+                logger.info(f"  Skipping, output file already exists (use --force to overwrite)")
                 continue
             
             try:
-                logger.info(f"Extracting cytometric features from '{json_file.name}'")
-                
                 # Load the particles section of the json file
                 particles_data = get_json_section(json_file, 'particles', logger)
                 

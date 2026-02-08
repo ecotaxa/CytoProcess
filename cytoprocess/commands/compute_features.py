@@ -173,22 +173,23 @@ def run(ctx, project, force=False, max_cores=None):
         sample_id = sample_dir.name
         output_file = work_dir / f"{sample_id}_image_features.parquet"
         
+        logger.info(f"'{sample_id}'")
+
         # Skip if output file exists and force is not set
         if output_file.exists() and not force:
-            logger.info(f"Skipping '{sample_id}', output file already exists (use --force to overwrite)")
+            logger.info(f"  Skipping, output file already exists (use --force to overwrite)")
             continue
         
         try:
-            logger.debug(f"Processing images for sample '{sample_id}'")
-            
             # Get all PNG images in sample directory
+            logger.debug(f"Listing images for sample '{sample_id}'")
             image_files = sorted(sample_dir.glob("*.png"))
             
             if not image_files:
                 logger.warning(f"No PNG images found in '{sample_dir}', run 'cytoprocess --sample '{sample_id}' extract_images {project}' first.", logger)
                 continue
             
-            logger.info(f"Processing {len(image_files)} images for sample '{sample_id}'")
+            logger.info(f"  {len(image_files)} images to process")
             
             # Prepare arguments for parallel processing
             args_list = [(image_file, sample_id) for image_file in image_files]
@@ -211,7 +212,7 @@ def run(ctx, project, force=False, max_cores=None):
             df = df.sort_values('object_id').reset_index(drop=True)
             df.to_parquet(output_file, index=False)
             
-            logger.info(f"Saved {df.shape[1]} properties for {df.shape[0]} images to '{output_file}'")
+            logger.info(f"  Saved {df.shape[1]} properties for {df.shape[0]} images to\n  '{output_file}'")
             
         except Exception as e:
             raiseCytoError(f"Error processing sample '{sample_id}': {e}", logger)

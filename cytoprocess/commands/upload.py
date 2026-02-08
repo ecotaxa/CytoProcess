@@ -413,13 +413,12 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
     for zip_path in zip_files:
         # Extract sample ID from filename (ecotaxa_<sample_id>.zip)
         sample_id = zip_path.stem.replace("ecotaxa_", "")
+        logger.info(f"'{sample_id}'")
         
         # Skip if sample already exists
         if sample_id in existing_samples:
-            print(f"Skipping: {zip_path.name} (sample '{sample_id}' already exists)")
+            logger.info(f"  Skipping, sample already exists on EcoTaxa")
             continue
-
-        print(f"Processing {sample_id}")
         
         # Upload
         logger.info(f"  Uploading file: '{zip_path.name}'")

@@ -24,6 +24,8 @@ def run(ctx, project, force=False):
     # Process each JSON file
     total_images = 0
     for json_file in json_files:
+        logger.info(f"'{json_file.stem}'")
+
         try:
             logger.debug(f"Extracting images from '{json_file.name}'")
             
@@ -34,10 +36,10 @@ def run(ctx, project, force=False):
             # Check if directory already exists
             if sample_images_dir.exists():
                 if force:
-                    logger.info(f"Removing existing directory: '{sample_images_dir}'")
+                    logger.info(f"  Removing existing directory: '{sample_images_dir}'")
                     shutil.rmtree(sample_images_dir)
                 else:
-                    logger.warning(f"Skipping '{json_file.name}', output directory already exists (use --force to overwrite).")
+                    logger.info(f"  Skipping, output directory already exists (use --force to overwrite).")
                     continue
             
             # Create the directory
@@ -77,7 +79,7 @@ def run(ctx, project, force=False):
                 
                 image_count += 1
                     
-            logger.info(f"Extracted {image_count} images from '{json_file.name}' to '{sample_images_dir}'")
+            logger.info(f"  Extracted {image_count} images to\n  '{sample_images_dir}'")
             total_images += image_count
                 
         except Exception as e:

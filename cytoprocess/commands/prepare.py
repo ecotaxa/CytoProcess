@@ -437,16 +437,18 @@ def run(ctx, project, force=False, only_tsv=False):
     instrument_meta_df = pd.read_parquet(work_dir / "sample_metadata_from_instrument.parquet")
 
     for sample_id in samples:
+        logger.info(f"'{sample_id}'")
+
         tsv_file = ecotaxa_dir / f"ecotaxa_{sample_id}.tsv"
         zip_file = ecotaxa_dir / f"ecotaxa_{sample_id}.zip"
 
         # Skip if output file exists and force is not set
         if (tsv_file.exists() and only_tsv and not force) or \
            (zip_file.exists() and not only_tsv and not force):
-            logger.info(f"Skipping '{sample_id}', ecotaxa_*." + ("tsv" if only_tsv else "zip") + " file already exists (use --force to overwrite)")
+            logger.info(f"  Skipping, ecotaxa_*." + ("tsv" if only_tsv else "zip") + " file already exists (use --force to overwrite)")
             continue
         
-        logger.info(f"Collating '{tsv_file}'")
+        logger.info(f"  Collating '{tsv_file}'")
 
         # Merge all data for this sample
         df, pixel_size = _merge_sample_data(project, sample_id, samples_meta_df, instrument_meta_df,   logger)
@@ -459,7 +461,7 @@ def run(ctx, project, force=False, only_tsv=False):
             continue
 
         # Create zip file
-        logger.info(f"Assembling '{zip_file}'")
+        logger.info(f"  Assembling '{zip_file}'")
         images_dir = project / "images" / sample_id
         _create_ecotaxa_zip(tsv_file, zip_file, images_dir, ecotaxa_dir, pixel_size, logger)
         # TODO move image processing in extract_images
