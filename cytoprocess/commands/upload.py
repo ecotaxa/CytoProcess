@@ -5,7 +5,7 @@ import time
 import yaml
 import keyring
 import requests
-from cytoprocess.utils import setup_logging, log_command_start, log_command_success, raiseCytoError, get_sample_files
+from cytoprocess.utils import setup_logging, log_command_start, log_command_success, raiseCytoError, get_sample_files, format_file_size
 
 # EcoTaxa API base URL
 ECOTAXA_API_URL = "https://ecotaxa.obs-vlfr.fr/api"
@@ -421,8 +421,8 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
             continue
         
         # Upload
-        logger.info(f"  Uploading file: '{zip_path.name}'")
         upload_result = upload_file(token, zip_path, timeout=ecotaxa_config.get("upload_timeout_seconds", 300))
+        logger.info(f"  Uploading '{zip_path.name}' ({format_file_size(zip_path.stat().st_size)})...")
         logger.debug(f"Upload result: {upload_result}")
         
         if upload_result.get("errors"):

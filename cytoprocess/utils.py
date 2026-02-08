@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime
 import copy
 import re
+import math
 
 
 def setup_logging(command: str = None, project: str = None, debug: bool = False) -> logging.Logger:
@@ -255,3 +256,30 @@ def raiseCytoError(message: str, logger: logging.Logger = None):
     if logger:
         logger.debug(message)
     raise click.ClickException(click.style(message, fg="red"))
+
+
+def format_file_size(size: int) -> str:
+    """
+    Format a file size in bytes into a human-readable string.
+    
+    Args:
+        size: The size in bytes to format.
+        
+    Returns:
+        A human-readable string representing the size (e.g., "10.5 MB").
+        
+    Examples:
+        >>> format_size(1024)
+        '1.0 KB'
+        >>> format_size(1048576)
+        '1.0 MB'
+        >>> format_size(123456789)
+        '117.7 MB'
+    """
+    if size == 0:
+        return "0 B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB")
+    i = int(math.floor(math.log(size, 1024)))
+    p = math.pow(1024, i)
+    s = round(size / p, 2)
+    return f"{s} {size_name[i]}"
