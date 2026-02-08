@@ -245,7 +245,7 @@ def raiseCytoError(message: str, logger: logging.Logger = None):
     """
     # log the error if logger is provided
     # this allows to log this error in the file log as well
-    # (which loggs at DEBUG level)
+    # (which logs at DEBUG level)
     if logger:
         logger.debug(message)
-    raise click.ClickException(message)
+    raise click.ClickException(click.style(message, fg="red"))
