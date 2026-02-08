@@ -185,7 +185,7 @@ def get_sample_files(project: str, logger: logging.Logger, kind: str = "json", c
     
     Args:
         project: The project directory path
-        kind: The type of files to retrieve. Can be "json" (from converted/) or "cyz" (from raw/)
+        kind: The type of files to retrieve. Can be "json" (from converted/), "cyz" (from raw/), "zip" (from ecotaxa/)
         sample: Optional sample name to filter by. If provided, only files
                 matching the sample basename will be returned.
                 
@@ -194,23 +194,29 @@ def get_sample_files(project: str, logger: logging.Logger, kind: str = "json", c
         returns an empty list.
         
     Raises:
-        ValueError: If kind is not "json" or "cyz"
+        ValueError: If kind is not "json", "cyz", or "zip"
         
     Examples:
         >>> files = get_sample_files('/path/to/project', kind='json')
         >>> files = get_sample_files('/path/to/project', kind='cyz', sample='my_sample')
+        >>> files = get_sample_files('/path/to/project', kind='zip', sample='my_sample')
     """
     
     # Determine directory and extension based on kind
     if kind == "json":
         target_dir = Path(project) / "converted"
+        command = "convert"
     elif kind == "cyz":
         target_dir = Path(project) / "raw"
+        command= "create"
+    elif kind == "zip":
+        target_dir = Path(project) / "ecotaxa"
+        command = "prepare"
     else:
-        raiseCytoError(f"kind must be 'json' or 'cyz', got '{kind}'", logger)
+        raiseCytoError(f"kind must be 'json', 'cyz', or 'zip', got '{kind}'", logger)
         
     if not target_dir.exists():
-        raiseCytoError(f"Directory for {kind} files not found: '{target_dir}' ; run `" + ("convert" if kind == "json" else "create") + "` command first", logger)   
+        raiseCytoError(f"Directory for {kind} files not found: '{target_dir}' ; run `cytoprocess {command} {project}` command first", logger)   
     
     # List all files of the specified kind
     logger.debug(f"Listing .{kind} files in '{target_dir}'")
@@ -223,7 +229,7 @@ def get_sample_files(project: str, logger: logging.Logger, kind: str = "json", c
     # Filter by sample if specified
     sample = getattr(ctx, "obj", {}).get("sample")
     if sample:
-        files = [f for f in files if f.stem == sample]
+        files = [f for f in files if f.stem.replace('ecotaxa_', '') == sample]
         if len(files) == 0:
             logger.warning(f"No .{kind} files found for sample '{sample}' in '{target_dir}'")
         else:

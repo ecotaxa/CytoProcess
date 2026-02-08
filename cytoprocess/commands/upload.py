@@ -5,7 +5,7 @@ import time
 import yaml
 import keyring
 import requests
-from cytoprocess.utils import setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.utils import setup_logging, log_command_start, log_command_success, raiseCytoError, get_sample_files
 
 # EcoTaxa API base URL
 ECOTAXA_API_URL = "https://ecotaxa.obs-vlfr.fr/api"
@@ -390,7 +390,7 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
         raiseCytoError("Authentication failed, cannot proceed with upload", logger)
     
     # Find zip files to upload
-    zip_files = sorted(ecotaxa_dir.glob("ecotaxa_*.zip"))
+    zip_files = get_sample_files(project, logger, kind="zip", ctx=ctx)
     if not zip_files:
         raiseCytoError(f"No ecotaxa_*.zip files found in '{ecotaxa_dir}', run 'cytoprocess prepare_ecotaxa {project}' first.", logger)
     
