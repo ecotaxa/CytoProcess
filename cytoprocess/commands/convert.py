@@ -38,7 +38,7 @@ def run(ctx, project, force=False):
             logger.info(f"Skipping '{cyz_file.name}', json file already exists (use --force to overwrite)")
             continue
         
-        logger.info(f"Converting 'raw/{cyz_file.name}' to 'converted/{json_file.name}'")
+        logger.info(f"Converting\n  'raw/{cyz_file.name}' →\n  'converted/{json_file.name}'")
         
         try:
             # Build and log the command
