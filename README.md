@@ -45,7 +45,7 @@ Each .cyz file is considered as a "sample" (and will correspond to an EcoTaxa sa
 
 ```
 my_project/
-    config.yaml configuration file
+    config      configuration files
     raw         source .cyz files
     converted   .json files converted from .cyz by Cyz2Json
     meta        files storing metadata and is mapping from .json to EcoTaxa
@@ -133,7 +133,7 @@ cytoprocess --sample 'name_of_cyz_file' command path/to/project
 
 All commands will skip the processing of a given sample if the output is already present. To re-process and overwrite, use the `--force` option.
 
-For metadata and cytometric features extraction (`extract_meta` and `extract_cyto`), information from the json file needs to be curated and translated into EcoTaxa metadata columns. This is defined in the configuration file, by `key: value` pairs of the form `json.fields.item.name: ecotaxa_name`. To get the list of possible json fields, use the `--list` option for `extract_meta` or `extract_cyto`; it will write a text file in `meta` with all possibilities. You can then copy-paste them to `config.yaml`.
+For metadata and cytometric features extraction (`extract_meta` and `extract_cyto`), information from the json file needs to be curated and translated into EcoTaxa metadata columns. This is defined in the configuration file, by `key: value` pairs of the form `json.fields.item.name: ecotaxa_name`. To get the list of possible json fields, use the `--list` option for `extract_meta` or `extract_cyto`; it will write a text file in `meta` with all possibilities. You can then copy-paste them to `config/config.yaml`.
 
 Even with all these fields available, the CytoSense may not record relevant metadata such as latitude, longitude, and date of each sample, which EcoTaxa needs to filter the data or export it to other data bases. You can provide such fields manually by editing the `meta/samples.csv` file.
 
