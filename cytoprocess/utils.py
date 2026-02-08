@@ -36,7 +36,30 @@ def setup_logging(command: str = None, project: str = None, debug: bool = False)
     # Default console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
-    console_handler.setFormatter(logging.Formatter('%(message)s'))
+
+    # Output some messages in colour
+    class ColourFormatter(logging.Formatter):
+        # get ANSI color codes
+        yellow = "\x1b[33m"
+        red = "\x1b[31m"
+        bold_red = "\x1b[1;31m"
+        reset = "\x1b[0m"
+        format = '%(message)s'
+
+        FORMATS = {
+            logging.DEBUG: format,
+            logging.INFO: format,
+            logging.WARNING: yellow + format + reset,
+            logging.ERROR: red + format + reset,
+            logging.CRITICAL: bold_red + format + reset
+        }
+
+        def format(self, record):
+            log_fmt = self.FORMATS.get(record.levelno)
+            formatter = logging.Formatter(log_fmt)
+            return formatter.format(record)
+    # Use the colour formatter (only for console output)
+    console_handler.setFormatter(ColourFormatter())
     logger.addHandler(console_handler)
     
     # File handler (only if project is specified)
