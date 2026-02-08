@@ -143,7 +143,7 @@ Even with all these fields available, the CytoSense may not record relevant meta
 Because everything is stored in the EcoTaxa files and can be re-generated from the .cyz files, you may want to remove the intermediate files, to reclaim disk space. This is done with
 
 ```bash
-cytoprocess cleanup path/to/project
+cytoprocess clean path/to/project
 ```
 
 ## Development

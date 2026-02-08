@@ -163,7 +163,6 @@ def all(ctx, project, force):
     logger = setup_logging(command="all", project=project, debug=ctx.obj["debug"])
     logger.info(f"Running all processing steps for project: {project}")
     
-
     convert.run(ctx, project=project, force=force)
     
     extract_meta.run(ctx, project=project, list_keys=False)
@@ -183,13 +182,13 @@ def all(ctx, project, force):
     logger.info("All processing steps completed successfully")
 
 
-@cli.command(name="cleanup")
+@cli.command(name="clean")
 @click.argument("project")
 @click.pass_context
-def cleanup(ctx, project):
+def clean(ctx, project):
     """Remove intermediate files in the project."""
-    from cytoprocess.commands import cleanup
-    cleanup.run(ctx, project=project)
+    from cytoprocess.commands import clean
+    clean.run(ctx, project=project)
 
 
 def main(argv=None):
