@@ -25,7 +25,16 @@ def run(ctx, project, force=False):
         cyz2json_path = install._check_or_get_cyz2json(logger)
     except Exception as e:
         raiseCytoError(f"Failed to get Cyz2Json binary: {e}", logger)
-        
+    
+    # Detect possible set_definition.xml that overrides the default one included in .cyz file
+    set_definition_path = Path(project) / "config" / "set_definition.xml"
+    if set_definition_path.exists():
+        logger.info(f"Using new set definition from '{set_definition_path}'")
+        set_definition_command = ["--imaging-set-definition", str(set_definition_path)]
+    else:
+        logger.info(f"Using imaging set definitions from the .cyz file,\n  override with 'config/set_definition.xml' if needed")
+        set_definition_command = []
+
     # Create processed directory if it doesn't exist
     converted_dir = ensure_project_dir(project, "converted")
 
@@ -42,8 +51,9 @@ def run(ctx, project, force=False):
         
         try:
             # Build and log the command
-            command = [cyz2json_path, str(cyz_file), "--raw", "--imaging-set-information","--output", str(json_file)]
-            # TODO add --imaging-set-definition my_new_set_definition.xml as an option
+            command = [cyz2json_path, str(cyz_file), "--raw", "--imaging-set-information"]
+            command.extend(set_definition_command)
+            command.extend(["--output", str(json_file)])
             logger.debug(f"Running command: {' '.join(command)}")
             
             # Run Cyz2Json to convert the file
