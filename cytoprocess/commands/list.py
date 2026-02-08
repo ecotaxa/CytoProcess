@@ -35,7 +35,7 @@ def run(ctx, project, extra_fields=DEFAULT_EXTRA_FIELDS):
         samples[field] = None
     
     # Print sample IDs to console
-    print(f"{len(samples)} samples found:")
+    logger.info(f"{len(samples)} samples found")
     for sample_id in samples['sample_id']:
         print(f"   {sample_id}")
 
