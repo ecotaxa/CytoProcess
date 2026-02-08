@@ -142,12 +142,12 @@ def run(ctx, project, list_keys=False, force=False):
             for path in paths:
                 f.write(f"{path}\n")
         
-        logger.info(f"Available cytometric features written to '{paths_file}'. Use them in the object section of the config.yaml file to define cytometric feature extraction.")
+        logger.info(f"Available cytometric features written to '{paths_file}'. Use them in the object section of the config/config.yaml file to define cytometric feature extraction.")
     
     else:
         # Normal operation: extract cytometric features based on config.yaml
         
-        config_file = Path(project) / "config.yaml"
+        config_file = Path(project) / "config" / "config.yaml"
         logger.info(f"Read selected cytometric features list from '{config_file}'")
         
         if not config_file.exists():

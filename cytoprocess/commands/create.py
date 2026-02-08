@@ -19,7 +19,7 @@ def run(ctx, project):
     
     # List of subdirectories to create
     # NB: others will be created on the fly by the other commands
-    subdirectories = ["raw", "meta"]
+    subdirectories = ["raw", "meta", "config"]
     
     # Create each subdirectory
     for subdir in subdirectories:
@@ -28,7 +28,7 @@ def run(ctx, project):
     
     # Copy metadata configuration template to config directory
     template_file = Path(__file__).parent.parent / "templates" / "config.yaml"
-    dest_file = Path(project) / "config.yaml"
+    dest_file = Path(project) / "config" / "config.yaml"
     if not dest_file.exists():
         logger.debug(f"Copying configuration template to '{dest_file}'")
         shutil.copy2(template_file, dest_file)

@@ -179,7 +179,7 @@ def run(ctx, project, list_keys=False):
     else:
         # Otherwise, in normal operations, extract specific metadata items based on config.yaml
 
-        config_file = Path(project) / "config.yaml"
+        config_file = Path(project) / "config" / "config.yaml"
         
         if not config_file.exists():
             raiseCytoError(f"Configuration file not found: '{config_file}', run 'cytoprocess create {project}' again.", logger)

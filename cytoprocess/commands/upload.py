@@ -368,7 +368,7 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
     # TODO abstract cheching the existence of the prpoject and of some files in it in a function; have it raise a FileNotFound error and handle it with try:except in cli.py
 
     # Load config from project
-    config_path =  project / "config.yaml"
+    config_path =  project / "config" / "config.yaml"
     if not config_path.exists():
         raiseCytoError(f"Config file not found: '{config_path}', run 'cytoprocess create {project}' again.", logger)
 
