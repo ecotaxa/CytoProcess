@@ -283,7 +283,7 @@ def run(ctx, project, list_keys=False, force=False):
                     # Count how many particles were in which combination of sets
                     unique_tuples, counts = np.unique(multiple_regions, axis=0, return_counts=True)
                     multiple_regions_counts = dict(zip(map(lambda x: ', '.join(x), unique_tuples), [int(c) for c in counts]))
-                    logger.warning(f"NB: Some particles were in several sets: {multiple_regions_counts}; only the first set has been considered for those particles.")
+                    logger.warning(f"Some particles were in several sets: {multiple_regions_counts}; only the first set has been considered for those particles.")
 
                 # Create DataFrame and save to Parquet
                 df = pd.DataFrame(rows)
@@ -291,7 +291,7 @@ def run(ctx, project, list_keys=False, force=False):
                 df = df.merge(sets_stats_df, how='left', on='acq_id')
                 df.to_parquet(output_file, index=False)
                 
-                logger.info(f"Saved {df.shape[1]} properties for {df.shape[0]} particles to '{output_file}'")
+                logger.info(f"  Saved {df.shape[1]} properties for {df.shape[0]} particles to\n  '{output_file}'")
                 
             except Exception as e:
                 raiseCytoError(f"Error processing '{json_file.name}': {e}", logger)
