@@ -28,8 +28,8 @@ def _add_scale_bar(input_path: Path, output_path: Path, pixel_size: float):
     Add a scale bar at the bottom of the image
     
     Args:
-        input_path: Path to the source PNG file
-        output_path: Path to write the processed PNG file
+        input_path: Path to the source JPG file
+        output_path: Path to write the processed JPG file
         pixel_size: Size of one pixel in um
     """
 
@@ -305,8 +305,8 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
     # Get the sample_id value from the assembled data (same for all rows)
     sample_id = df["sample_id"].iloc[0]
     
-    # Add image filename based on object_id
-    df['img_file_name'] = df['object_id'].str.replace(f"{sample_id}_", "", n=1) + ".png"
+    # Add image filename based on object_id (this is the actual image)
+    df['img_file_name'] = df['object_id'].str.replace(f"{sample_id}_", "", n=1) + ".jpg"
     
     # Add img_rank (0-based index for multiple images per object)
     df['img_rank'] = 0
@@ -373,7 +373,7 @@ def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path,
         pixel_size: Pixel size in mm (for scale bar)
         logger: Logger instance
     """
-    image_files = list(images_dir.glob("*.png"))
+    image_files = list(images_dir.glob("*.jpg"))
     processed_images = []
     
     with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:

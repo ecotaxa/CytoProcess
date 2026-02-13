@@ -72,8 +72,8 @@ def run(ctx, project, force=False):
                     logger.error(f"Failed to decode base64 for particle {particle_id} in '{json_file.name}': {e}")
                     continue
                 
-                # Write to PNG file
-                output_file = sample_images_dir / f"{particle_id}.png"
+                # Write to JPG file (the data is JPG encoded already)
+                output_file = sample_images_dir / f"{particle_id}.jpg"
                 with open(output_file, 'wb') as img_file:
                     img_file.write(image_data)
                 

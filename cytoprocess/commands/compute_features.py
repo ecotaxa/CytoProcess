@@ -181,12 +181,12 @@ def run(ctx, project, force=False, max_cores=None):
             continue
         
         try:
-            # Get all PNG images in sample directory
+            # Get all JPG images in sample directory
             logger.debug(f"Listing images for sample '{sample_id}'")
-            image_files = sorted(sample_dir.glob("*.png"))
+            image_files = sorted(sample_dir.glob("*.jpg"))
             
             if not image_files:
-                logger.warning(f"No PNG images found in '{sample_dir}', run 'cytoprocess --sample '{sample_id}' extract_images {project}' first.", logger)
+                logger.warning(f"No JPG images found in '{sample_dir}', run 'cytoprocess --sample '{sample_id}' extract_images {project}' first.", logger)
                 continue
             
             logger.info(f"  {len(image_files)} images to process")
