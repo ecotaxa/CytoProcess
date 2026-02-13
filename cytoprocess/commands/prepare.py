@@ -182,7 +182,7 @@ def _detect_extra_samples(project: Path, samples: list[str], logger) -> None:
     for pattern, suffix in [("*_cytometric_features.parquet", "_cytometric_features"),
                             ("*_pulses.parquet", "_pulses"),
                             ("*_image_features.parquet", "_image_features")]:
-        for file in work_dir.glob(pattern):
+        for file in sorted(work_dir.glob(pattern)):
             sample_id = file.stem.replace(suffix, "")
             work_samples.add(sample_id)
     

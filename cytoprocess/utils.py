@@ -221,7 +221,7 @@ def get_sample_files(project: str, logger: logging.Logger, kind: str = "json", c
     
     # List all files of the specified kind
     logger.debug(f"Listing .{kind} files in '{target_dir}'")
-    files = list(target_dir.glob("*."+kind))
+    files = sorted(list(target_dir.glob("*."+kind)))
     if len(files) == 0:
         logger.warning(f"No .{kind} files found in '{target_dir}'")
         return []
