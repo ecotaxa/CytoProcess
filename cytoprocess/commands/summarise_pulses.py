@@ -1,8 +1,12 @@
-import logging
 import numpy as np
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
 from cytoprocess.utils import get_sample_files, ensure_project_dir, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
+import matplotlib.pyplot as plt
+# Set default plot style and size
+plt.rcParams["figure.figsize"] = 7, 4
+plt.rcParams["figure.autolayout"] = True
+plt.rcParams["font.size"] = 8
 
 
 def _normalise_pulse(values):
@@ -57,17 +61,19 @@ def run(ctx, project, n_poly=10, force=False):
     
     # Ensure work directory exists
     work_dir = ensure_project_dir(project, "work")
+    pulses_dir = ensure_project_dir(project, "pulses")
     
     # Process each JSON file and write one Parquet per sample
     for json_file in json_files:
         sample_id = json_file.stem
         output_file = work_dir / f"{sample_id}_pulses.parquet"
+        pulses_img_dir = pulses_dir / f"{sample_id}"
         
         logger.info(f"'{json_file.stem}'")
 
         # Skip if output file exists and force is not set
-        if output_file.exists() and not force:
-            logger.info(f"  Skipping, output file already exists (use --force to overwrite)")
+        if output_file.exists() and pulses_img_dir.exists() and not force:
+            logger.info(f"  Skipping, outputs already exist (use --force to overwrite)")
             continue
         
         try:
@@ -104,7 +110,10 @@ def run(ctx, project, n_poly=10, force=False):
                     'sample_id': sample_id,
                     'object_id': f"{sample_id}_{particle_idx}"
                 }
-                
+
+                # Prepare storage for the normalised pulses and its plot
+                pulses = {}
+                ensure_project_dir(pulses_img_dir, "")
                 # Process each pulse shape (one per channel)
                 for pulse_shape in pulse_shapes:
                     description = pulse_shape.get('description')
@@ -118,12 +127,31 @@ def run(ctx, project, n_poly=10, force=False):
                     
                     # Fit polynomial and get coefficients
                     coefficients = _fit_polynomial(normalised, n_poly)
-                    
+
+                    # Add normalised pulse to pulses dictionary
+                    pulses.update({description: normalised})
+
                     # Add coefficients to row with appropriate column names
                     for coef_idx, coef_val in enumerate(coefficients):
                         col_name = f"object_{description}_p{coef_idx}"
                         row[col_name] = coef_val
                 
+                # Plot pulses
+                pulses = pd.DataFrame(pulses)
+                pulses.plot().legend(bbox_to_anchor=(1.0, 0.35))
+                # Improve plot aesthetics
+                ax = plt.gca()
+                ax.set_yticks([])                     # remove Y axis
+                ax.set_ylabel("")                     #   normalised => only shape matters
+                ax.get_legend().set_frame_on(False)   # remove legend box
+                ax.spines['top'].set_visible(False)   # remove plot box
+                ax.spines['right'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                # Save the plot to disk
+                plt.savefig(pulses_img_dir / f"{particle_idx}.png")
+                plt.close()
+                
+                # Add the polynomial coefficients as a new row
                 rows.append(row)
             
             if not rows:

@@ -27,7 +27,8 @@ dependencies = [
     "pyyaml>=5.4",
     "requests>=2.25",
     "scikit-image>=0.26",
-    "scipy>=1.7"
+    "scipy>=1.7",
+    "matplotlib>=3.10"
 ]
 
 [project.urls]
