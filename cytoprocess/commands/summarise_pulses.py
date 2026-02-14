@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
 from cytoprocess.utils import get_sample_files, ensure_project_dir, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
+import imageio as iio
 import matplotlib
 # Use non-interactive backend for plotting (no display needed)
 matplotlib.use("Agg")
@@ -153,6 +154,11 @@ def run(ctx, project, n_poly=10, force=False):
                 # Save the plot to disk
                 plt.savefig(pulses_img_dir / f"{particle_idx}.png")
                 plt.close()
+                # Remove the alpha channel from the image to avoid issues with EcoTaxa
+                # TODO revisit once https://github.com/ecotaxa/ecotaxa_back/pull/106 is merged
+                img = iio.imread(pulses_img_dir / f"{particle_idx}.png")
+                img = img[:, :, :3]
+                iio.imsave(pulses_img_dir / f"{particle_idx}.png", img)
                 
                 # Add the polynomial coefficients as a new row
                 rows.append(row)
