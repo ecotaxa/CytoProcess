@@ -343,22 +343,33 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
 
     # Order columns for cleanness
     ordered_cols = img_cols + object_cols + process_cols + acq_cols + sample_cols
-    sorted_df = df[ordered_cols]
+    df = df[ordered_cols]
     
     # Create type indicators row
-    type_row = {col: _infer_ecotaxa_type(sorted_df[col]) for col in sorted_df.columns}
+    type_row = {col: _infer_ecotaxa_type(df[col]) for col in df.columns}
+
+    # Duplicate the DataFrame to reference pulse shape images
+    # (they have the same id but are stored as PNG files)
+    df_png = df.copy()
+    df_png['img_file_name'] = df_png['img_file_name'].str.replace('.jpg', '.png', regex=False)
+    df_png['img_rank'] = 1
+
+    # Combine the two DataFrames
+    df = pd.concat([df, df_png], ignore_index=True)
+    # Sort by object_id for consistent ordering
+    df = df.sort_values(by="object_id").reset_index(drop=True)
     
     # Create the EcoTaxa .tsv file
     with open(tsv_file, 'w') as f:
-        f.write('\t'.join(sorted_df.columns) + '\n')
-        f.write('\t'.join([type_row[col] for col in sorted_df.columns]) + '\n')
-        sorted_df.to_csv(f, sep='\t', index=False, header=False)
+        f.write('\t'.join(df.columns) + '\n')
+        f.write('\t'.join([type_row[col] for col in df.columns]) + '\n')
+        df.to_csv(f, sep='\t', index=False, header=False)
     
-    logger.debug(f"Saved {sorted_df.shape[1]} fields for {sorted_df.shape[0]} objects to '{tsv_file}'")
-    return sorted_df
+    logger.debug(f"Saved {df.shape[1]} fields for {df.shape[0]} objects to '{tsv_file}'")
+    return df
 
 
-def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path, 
+def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path, pulses_dir: Path,
                         ecotaxa_dir: Path, pixel_size: float, logger) -> None:
     """
     Create EcoTaxa ZIP file containing TSV and processed images with scale bars.
@@ -373,6 +384,7 @@ def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path,
         pixel_size: Pixel size in mm (for scale bar)
         logger: Logger instance
     """
+    pulses_files = list(pulses_dir.glob("*.png"))
     image_files = list(images_dir.glob("*.jpg"))
     processed_images = []
     
@@ -391,6 +403,11 @@ def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path,
             
             # Add to zip
             zf.write(processed_path, processed_path.name)
+        
+        # Add all pulses files to the zip
+        logger.debug(f"Adding {len(pulses_files)} pulse plot images to zip file")
+        for pulse_file in pulses_files:
+            zf.write(pulse_file, pulse_file.name)
     
     logger.debug(f"Created zip file '{zip_file}' with {len(image_files)} images")
 
@@ -463,7 +480,8 @@ def run(ctx, project, force=False, only_tsv=False):
         # Create zip file
         logger.info(f"  Assembling '{zip_file}'")
         images_dir = project / "images" / sample_id
-        _create_ecotaxa_zip(tsv_file, zip_file, images_dir, ecotaxa_dir, pixel_size, logger)
+        pulses_dir = project / "pulses" / sample_id
+        _create_ecotaxa_zip(tsv_file, zip_file, images_dir, pulses_dir, ecotaxa_dir, pixel_size, logger)
         # TODO move image processing in extract_images
 
     log_command_success(logger, "Prepare EcoTaxa files")
