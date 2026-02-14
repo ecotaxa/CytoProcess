@@ -280,7 +280,9 @@ def _merge_sample_data(project: Path, sample_id: str, samples_meta_df: pd.DataFr
     df = df.merge(sample_meta, on=['sample_id'], how='left')
     df = df.merge(instrument_meta, on=['sample_id'], how='left')
 
-    # Define process_id as acq_id
+    # Prepend sample id to acq_id to avoid conflicts
+    # (and name process id the same)
+    df['acq_id'] = df['sample_id'] + "_" + df['acq_id']
     df['process_id'] = df['acq_id']
 
     logger.debug(f"Found {len(df)} objects for sample '{sample_id}'")
