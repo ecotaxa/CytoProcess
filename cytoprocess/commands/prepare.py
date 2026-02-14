@@ -2,7 +2,7 @@ import pandas as pd
 import zipfile
 import numpy as np
 from pathlib import Path
-from skimage import io as skio
+import imageio as iio
 from cytoprocess.utils import ensure_project_dir, setup_logging, log_command_start, log_command_success, raiseCytoError
 
 
@@ -83,7 +83,7 @@ def _add_scale_bar(input_path: Path, output_path: Path, pixel_size: float):
     breaks_text = [t1um, t10um, t100um]
     
     # Read the grayscale image
-    img = skio.imread(input_path, as_gray=True)
+    img = iio.imread(input_path)
     img_width_px = img.shape[1]
     
     # Define how large the scale bar is for each physical size
@@ -124,7 +124,7 @@ def _add_scale_bar(input_path: Path, output_path: Path, pixel_size: float):
     img = np.concatenate((img, scale), axis=0)
         
     # Write the processed image
-    skio.imsave(output_path, img)
+    iio.imsave(output_path, img, quality=98)
 
 
 def _list_samples(project: Path, sample_filter: str | None, logger) -> tuple[pd.DataFrame, list[str]]:
