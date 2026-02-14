@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
 from cytoprocess.utils import get_sample_files, ensure_project_dir, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
+import matplotlib
+# Use non-interactive backend for plotting (no display needed)
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 # Set default plot style and size
 plt.rcParams["figure.figsize"] = 7, 4
