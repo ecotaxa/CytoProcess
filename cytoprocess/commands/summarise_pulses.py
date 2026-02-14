@@ -166,7 +166,7 @@ def run(ctx, project, n_poly=10, force=False):
             df = df.sort_values('object_id').reset_index(drop=True)
             df.to_parquet(output_file, index=False)
             
-            logger.info(f"  Saved {df.shape[0]} particles to\n  '{output_file}'")
+            logger.info(f"  Saved {df.shape[0]} particles to\n  '{output_file}'\n  and pulse shape images to\n  '{pulses_img_dir}'")
             
         except Exception as e:
             raiseCytoError(f"Error processing '{json_file.name}': {e}", logger)
