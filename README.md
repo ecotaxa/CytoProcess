@@ -153,7 +153,7 @@ Fork this repository, clone your fork.
 Prepare your development environment by installing the dependencies within a conda environment
 
 ```bash
-conda create -n cytoprocess python=3.10
+conda create -n cytoprocess python=3.11
 conda activate cytoprocess
 pip install -e .
 ```
