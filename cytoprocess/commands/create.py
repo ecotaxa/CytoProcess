@@ -31,7 +31,7 @@ def run(ctx, project):
     dest_file = Path(project) / "config" / "config.yaml"
     if not dest_file.exists():
         logger.debug(f"Copying configuration template to '{dest_file}'")
-        shutil.copy2(template_file, dest_file)
+        shutil.copyfile(template_file, dest_file)
     else:
         logger.debug(f"Configuration file already exists at '{dest_file}'")
 
