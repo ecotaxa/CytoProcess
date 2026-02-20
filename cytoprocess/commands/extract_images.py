@@ -89,3 +89,8 @@ def run(ctx, project, force=False):
     log_command_success(logger, "Extract images")
 
 # TODO add a way to post process the images to remove the background and crop them when they are full frames
+# background = instrument['measurementSettings']['CytoSettings']['CytoSettings']['iif']['Background'].get('Data')
+# background_data = base64.b64decode(background)
+# output_file = Path(project) / "background.png"
+# with open(output_file, 'wb') as img_file:
+#     img_file.write(background_data)
