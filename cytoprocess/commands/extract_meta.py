@@ -225,8 +225,8 @@ def run(ctx, project, list_keys=False):
                         
                         if value is None:
                             logger.debug(f"Key '{json_path}' not found in {json_file.name}")
-                        
-                        row[full_column_name] = value
+                        else:
+                            row[full_column_name] = value
 
                     # Force the inclusion of pixel size because we need it later
                     # (to draw the scale bar on images)

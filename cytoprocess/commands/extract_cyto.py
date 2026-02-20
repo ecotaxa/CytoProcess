@@ -267,11 +267,11 @@ def run(ctx, project, list_keys=False, force=False):
                         
                         if value is None:
                             logger.debug(f"Path '{json_path}' not found in particle {particle_idx} of '{json_file.name}'")
-                        if value == 'NaN':
-                            logger.debug(f"Path '{json_path}' has value 'NaN' for particle {particle_idx} of '{json_file.name}'")
-                            value = np.nan
-                        
-                        row[full_column_name] = value
+                        else:
+                            if value == 'NaN':
+                                logger.debug(f"Path '{json_path}' has value 'NaN' for particle {particle_idx} of '{json_file.name}'")
+                                value = np.nan
+                            row[full_column_name] = value
                     
                     rows.append(row)
                 
