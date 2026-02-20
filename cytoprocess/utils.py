@@ -171,7 +171,7 @@ def get_json_section(json_file: Path, key: str, logger: logging.Logger):
 
     with open(json_file, 'rb') as f:
         # Use ijson to stream only the specified part
-        parser = ijson.items(f, key)
+        parser = ijson.items(f, key, use_float=True)
         data = next(parser, None)
         
         if data is None:

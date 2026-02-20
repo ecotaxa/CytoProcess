@@ -23,7 +23,7 @@ def _normalise_pulse(values):
     Returns:
         Numpy array normalised to [0, 1], or zeros if max == min
     """
-    arr = np.array([float(v) for v in values])
+    arr = np.array(values, dtype=np.float32)
     min_val = arr.min()
     max_val = arr.max()
     

@@ -205,13 +205,13 @@ def run(ctx, project, list_keys=False, force=False):
                                   not s.get("imaged_volume") == 'NaN']
                     # Compute relevant quantifies
                     for s in sets_stats:
-                        imaging_ratio = np.float32(s['images']) / np.float32(s['count'])
-                        analysed_volume = np.float32(s['imaged_volume']) / imaging_ratio
+                        imaging_ratio = s['images'] / s['count']
+                        analysed_volume = s['imaged_volume'] / imaging_ratio
                         sets_stats_df = pd.concat([
                             set_stats_df,
                             pd.DataFrame({'name': s['name'],
                                           'acq_imaging_ratio': imaging_ratio,
-                                          'acq_imaged_volume_uL': np.float32(s['imaged_volume']),
+                                          'acq_imaged_volume_uL': s['imaged_volume'],
                                           'acq_analysed_volume_uL': analysed_volume}, index=[0])])
                 # Rename 'name' to its actual meaning
                 sets_stats_df = sets_stats_df.rename(columns={'name': 'acq_id'})

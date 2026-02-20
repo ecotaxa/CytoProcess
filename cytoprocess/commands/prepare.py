@@ -271,7 +271,7 @@ def _merge_sample_data(project: Path, sample_id: str, samples_meta_df: pd.DataFr
     pulses_df = pd.read_parquet(work_dir / f"{sample_id}_pulses.parquet")
 
     # Extract pixel size from our custom column and remove it
-    pixel_size = np.float32(instrument_meta.iloc[0]['__pixel_size__'])
+    pixel_size = instrument_meta.iloc[0]['__pixel_size__']
     instrument_meta = instrument_meta.drop(columns=['__pixel_size__'])
 
     # Merge all data
