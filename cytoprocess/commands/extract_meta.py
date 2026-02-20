@@ -143,26 +143,27 @@ def run(ctx, project, list_keys=False):
         # If the --list argument is provided, extract metadata keys from each JSON file and store them in a text file
         # This will be the basis for the user to create metadata_config.yaml
 
-        keys = []
-        for json_file in json_files:
+        keys = set()
+        for idx,json_file in enumerate(json_files):
             try:
                 # Load the instrument section of the json file
                 instrument_data = get_json_section(json_file, 'instrument', logger)
 
                 # If it is found, extract all the metadata keys it contains
                 if instrument_data is not None:
-                    keys.extend(_get_json_structure(instrument_data))
+                    new_keys = set(_get_json_structure(instrument_data))
+                    n_new = len(new_keys - keys)
+                    if n_new > 0:
+                        keys.update(new_keys)
+                    logger.info(f"Found {n_new} " + ("new " if idx>0 else "") + f"metadata keys in '{json_file.name}'")
                 
             except ijson.JSONError as e:
                 raiseCytoError(f"Failed to parse .json file '{json_file.name}': {e}", logger)
             except Exception as e:
                 raiseCytoError(f"Error reading '{json_file.name}': {e}", logger)
 
-            logger.info(f"Found {len(keys)} metadata items in '{json_file.name}'")
-
         # If there are multiple json files, deduplicate keys
         if len(json_files) > 1:
-            keys = list(set(keys))
             logger.info(f"Found {len(keys)} unique metadata items across all .json files")
 
         # Make sure config directory exists
