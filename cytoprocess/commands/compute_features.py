@@ -89,14 +89,13 @@ def _process_single_image(args):
     Process a single image file and return features.
     
     Args:
-        args: Tuple of (image_file, sample_id)
+        args: Tuple of (image_file, sample_id, logger)
         
     Returns:
         Dictionary of features with identifiers, or None if processing failed
     """
-    image_file, sample_id = args
+    image_file, sample_id, logger = args
     particle_id = image_file.stem
-    logger = logging.getLogger("cytoprocess.compute_features")
    
     try:
         # Read image as grayscale
@@ -192,7 +191,7 @@ def run(ctx, project, force=False, max_cores=None):
             logger.info(f"  {len(image_files)} images to process")
             
             # Prepare arguments for parallel processing
-            args_list = [(image_file, sample_id) for image_file in image_files]
+            args_list = [(image_file, sample_id, logger) for image_file in image_files]
             
             # Process images in parallel
             with Pool(processes=n_cores) as pool:
