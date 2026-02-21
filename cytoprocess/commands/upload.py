@@ -461,4 +461,5 @@ def run(ctx, project, username: str | None = None, password: str | None = None):
         else:
             logger.warning(f"  ✗ Import failed or requires manual intervention")
 
+    logger.info(f"Your data is at https://ecotaxa.obs-vlfr.fr/prj/{project_id}")
     log_command_success(logger, "Upload")
