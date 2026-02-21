@@ -222,7 +222,7 @@ def _ensure_sample_data(project: Path, samples: list[str], logger) -> None:
 
         cytometric_file = work_dir / f"{sample_id}_cytometric_features.parquet"
         if not cytometric_file.exists():
-            logger.warning(f"Missing cytometric features, run `cytoprocess --sample '{sample_id}' extract_features {project}`")
+            logger.warning(f"Missing cytometric features, run `cytoprocess --sample '{sample_id}' extract_cyto {project}`")
             at_least_one_missing = True
 
         pulses_file = work_dir / f"{sample_id}_pulses.parquet"
