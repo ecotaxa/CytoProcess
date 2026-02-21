@@ -94,7 +94,7 @@ def extract_cyto(ctx, project, list_keys, force):
 @click.argument("project")
 @click.option("--n-poly", default=10, help="Number of polynomial coefficients")
 @click.option("--force", is_flag=True, default=False, help="Force processing even if output files already exist")
-@click.option("--max-cores", type=int, default=None, help="Maximum number of CPU cores to use for parallel processing")
+@click.option("--max-cores", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing")
 @click.pass_context
 def summarise_pulses(ctx, project, n_poly, force, max_cores):
     """Summarise pulse shapes."""
@@ -115,7 +115,7 @@ def extract_images(ctx, project, force):
 @cli.command(name="compute_features")
 @click.argument("project")
 @click.option("--force", is_flag=True, default=False, help="Force processing even if output files already exist")
-@click.option("--max-cores", type=int, default=None, help="Maximum number of CPU cores to use for parallel processing")
+@click.option("--max-cores", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing")
 @click.pass_context
 def compute_features(ctx, project, force, max_cores):
     """Compute features from extracted images."""
