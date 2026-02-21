@@ -94,11 +94,12 @@ def extract_cyto(ctx, project, list_keys, force):
 @click.argument("project")
 @click.option("--n-poly", default=10, help="Number of polynomial coefficients")
 @click.option("--force", is_flag=True, default=False, help="Force processing even if output files already exist")
+@click.option("--max-cores", type=int, default=None, help="Maximum number of CPU cores to use for parallel processing")
 @click.pass_context
-def summarise_pulses(ctx, project, n_poly, force):
+def summarise_pulses(ctx, project, n_poly, force, max_cores):
     """Summarise pulse shapes."""
     from cytoprocess.commands import summarise_pulses
-    summarise_pulses.run(ctx, project=project, n_poly=n_poly, force=force)
+    summarise_pulses.run(ctx, project=project, n_poly=n_poly, force=force, max_cores=max_cores)
 
 
 @cli.command(name="extract_images")

@@ -3,6 +3,8 @@ import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
 from cytoprocess.utils import get_sample_files, ensure_project_dir, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
 import imageio as iio
+import os
+from multiprocessing import Pool
 import matplotlib
 # Use non-interactive backend for plotting (no display needed)
 matplotlib.use("Agg")
@@ -49,13 +51,110 @@ def _fit_polynomial(pulse, n_poly):
     return poly.convert().coef
 
 
-def run(ctx, project, n_poly=10, force=False):
+def _process_single_particle(args):
+    """
+    Process a single particle to extract pulse shape features.
+    
+    Args:
+        args: Tuple of (particle, sample_id, n_poly, pulses_img_dir, logger)
+        
+    Returns:
+        Dictionary of features for one particle, or None if processing fails.
+    """
+    particle, sample_id, n_poly, pulses_img_dir, logger = args
+
+    try:
+        # Only process particles with images
+        if not particle.get('hasImage', False):
+            return None
+
+        particle_idx = particle.get('particleId')
+        if particle_idx is None:
+            return None
+
+        # get the pulse shapes
+        pulse_shapes = particle.get('pulseShapes', [])
+        
+        if not pulse_shapes:
+            logger.debug(f"No pulseShapes for particle {particle_idx} in sample '{sample_id}'")
+            return None
+        
+        # Create a row for this particle
+        row = {
+            'sample_id': sample_id,
+            'object_id': f"{sample_id}_{particle_idx}"
+        }
+
+        # Prepare storage for the normalised pulses and its plot
+        pulses = {}
+        ensure_project_dir(pulses_img_dir, "")
+        # Process each pulse shape (one per channel)
+        for pulse_shape in pulse_shapes:
+            description = pulse_shape.get('description')
+            values = pulse_shape.get('values', [])
+            
+            if description is None or not values:
+                continue
+            
+            # Normalise the pulse
+            normalised = _normalise_pulse(values)
+            
+            # Fit polynomial and get coefficients
+            coefficients = _fit_polynomial(normalised, n_poly)
+
+            # Add normalised pulse to pulses dictionary
+            pulses.update({description: normalised})
+
+            # Add coefficients to row with appropriate column names
+            for coef_idx, coef_val in enumerate(coefficients):
+                col_name = f"object_{description}_p{coef_idx}"
+                row[col_name] = coef_val
+        
+        if not pulses:
+             return None
+
+        # Plot pulses
+        pulses = pd.DataFrame(pulses)
+        pulses.plot().legend(bbox_to_anchor=(1.0, 0.35))
+        # Improve plot aesthetics
+        ax = plt.gca()
+        ax.set_yticks([])                     # remove Y axis
+        ax.set_ylabel("")                     #   normalised => only shape matters
+        ax.get_legend().set_frame_on(False)   # remove legend box
+        ax.spines['top'].set_visible(False)   # remove plot box
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        # Save the plot to disk
+        img_path = pulses_img_dir / f"{particle_idx}.png"
+        plt.savefig(img_path)
+        plt.close()
+        # Remove the alpha channel from the image to avoid issues with EcoTaxa
+        # TODO revisit once https://github.com/ecotaxa/ecotaxa_back/pull/106 is merged
+        img = iio.imread(img_path)
+        if img.shape[2] == 4:
+            img = img[:, :, :3]
+            iio.imsave(img_path, img)
+        
+        return row
+    except Exception as e:
+        logger.error(f"Error processing particle {particle.get('particleId', 'N/A')} from sample {sample_id}: {e}")
+        return None
+
+
+def run(ctx, project, n_poly=10, force=False, max_cores=None):
     logger = setup_logging(command="summarise_pulses", project=project, debug=ctx.obj["debug"])
 
     log_command_start(logger, "Summarising pulse shapes", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
     logger.debug(f"Using {n_poly} polynomial coefficients")
     
+    # Determine number of cores to use
+    available_cores = os.cpu_count() or 1
+    n_cores = max(1, available_cores - 1)
+    if max_cores is not None:
+        n_cores = min(n_cores, max_cores)
+    logger.debug(f"Using {n_cores} core(s) for parallel processing")
+
     # Get JSON files from converted directory
     json_files = get_sample_files(project, logger, kind="json", ctx=ctx)
     if not json_files:
@@ -90,78 +189,16 @@ def run(ctx, project, n_poly=10, force=False):
             
             logger.debug(f"Found {len(particles_data)} particles in '{json_file.name}'")
             
-            # Prepare data structure: list of dicts, one per particle
-            rows = []
-            
-            # Process each particle
+            # Prepare arguments for parallel processing
+            args_list = [(p, sample_id, n_poly, pulses_img_dir, logger) for p in particles_data]
+
+            # Process particles in parallel
             logger.debug("Processing particles for pulse shape extraction")
-            for particle in particles_data:                
-                    # Only process particles with images
-                if not particle.get('hasImage', False):
-                    continue
-
-                particle_idx = particle.get('particleId')
-
-                # get the pulse shapes
-                pulse_shapes = particle.get('pulseShapes', [])
-                
-                if not pulse_shapes:
-                    logger.debug(f"No pulseShapes for particle {particle_idx} in '{json_file.name}'")
-                    continue
-                
-                # Create a row for this particle
-                row = {
-                    'sample_id': sample_id,
-                    'object_id': f"{sample_id}_{particle_idx}"
-                }
-
-                # Prepare storage for the normalised pulses and its plot
-                pulses = {}
-                ensure_project_dir(pulses_img_dir, "")
-                # Process each pulse shape (one per channel)
-                for pulse_shape in pulse_shapes:
-                    description = pulse_shape.get('description')
-                    values = pulse_shape.get('values', [])
-                    
-                    if description is None or not values:
-                        continue
-                    
-                    # Normalise the pulse
-                    normalised = _normalise_pulse(values)
-                    
-                    # Fit polynomial and get coefficients
-                    coefficients = _fit_polynomial(normalised, n_poly)
-
-                    # Add normalised pulse to pulses dictionary
-                    pulses.update({description: normalised})
-
-                    # Add coefficients to row with appropriate column names
-                    for coef_idx, coef_val in enumerate(coefficients):
-                        col_name = f"object_{description}_p{coef_idx}"
-                        row[col_name] = coef_val
-                
-                # Plot pulses
-                pulses = pd.DataFrame(pulses)
-                pulses.plot().legend(bbox_to_anchor=(1.0, 0.35))
-                # Improve plot aesthetics
-                ax = plt.gca()
-                ax.set_yticks([])                     # remove Y axis
-                ax.set_ylabel("")                     #   normalised => only shape matters
-                ax.get_legend().set_frame_on(False)   # remove legend box
-                ax.spines['top'].set_visible(False)   # remove plot box
-                ax.spines['right'].set_visible(False)
-                ax.spines['left'].set_visible(False)
-                # Save the plot to disk
-                plt.savefig(pulses_img_dir / f"{particle_idx}.png")
-                plt.close()
-                # Remove the alpha channel from the image to avoid issues with EcoTaxa
-                # TODO revisit once https://github.com/ecotaxa/ecotaxa_back/pull/106 is merged
-                img = iio.imread(pulses_img_dir / f"{particle_idx}.png")
-                img = img[:, :, :3]
-                iio.imsave(pulses_img_dir / f"{particle_idx}.png", img)
-                
-                # Add the polynomial coefficients as a new row
-                rows.append(row)
+            with Pool(processes=n_cores) as pool:
+                results = pool.map(_process_single_particle, args_list)
+            
+            # Filter out None results
+            rows = [r for r in results if r is not None]
             
             if not rows:
                 logger.warning(f"No pulse data extracted from '{json_file.name}'")
