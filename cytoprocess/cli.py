@@ -29,6 +29,7 @@ def cli(ctx, debug, sample):
         sample_path = Path(sample)
         sample = sample_path.stem
     ctx.obj["sample"] = sample
+    # TODO add a global mask option to process all samples that match the mask (e.g. "sample1_*" to process all samples that start with "sample1_")
 
 
 @cli.command(name="install")
