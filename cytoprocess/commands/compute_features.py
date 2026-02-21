@@ -185,7 +185,7 @@ def run(ctx, project, force=False, max_cores=None):
             image_files = sorted(sample_dir.glob("*.jpg"))
             
             if not image_files:
-                logger.warning(f"No JPG images found in '{sample_dir}', run 'cytoprocess --sample '{sample_id}' extract_images {project}' first.", logger)
+                logger.warning(f"No JPG images found in '{sample_dir}', run 'cytoprocess --sample '{sample_id}' extract_images {project}' first.")
                 continue
             
             logger.info(f"  {len(image_files)} images to process")
