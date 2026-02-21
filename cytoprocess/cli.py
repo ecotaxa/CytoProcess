@@ -148,8 +148,10 @@ def upload(ctx, project, username, password):
 @cli.command(name="all")
 @click.argument("project")
 @click.option("--force", is_flag=True, default=False, help="Force processing even if output already exists")
+@click.option("--n-poly", default=10, help="Number of polynomial coefficients")
+@click.option("--max-cores", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing")
 @click.pass_context
-def all(ctx, project, force):
+def all(ctx, project, force, n_poly, max_cores):
     """Run all processing steps in sequence."""
     from cytoprocess.commands import (
         convert,
@@ -171,11 +173,11 @@ def all(ctx, project, force):
 
     extract_cyto.run(ctx, project=project, list_keys=False, force=force)
     
-    summarise_pulses.run(ctx, project=project, force=force)
+    summarise_pulses.run(ctx, project=project, force=force, n_poly=n_poly, max_cores=max_cores)
 
     extract_images.run(ctx, project=project, force=force)
     
-    compute_features.run(ctx, project=project, force=force)
+    compute_features.run(ctx, project=project, force=force, max_cores=max_cores)
     
     prepare.run(ctx, project=project, force=force)
     
