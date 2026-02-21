@@ -361,6 +361,7 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
     # Order columns for cleanness
     ordered_cols = img_cols + object_cols + process_cols + acq_cols + sample_cols
     df = df[ordered_cols]
+    # TODO review, it seems the order is a bit random once imported...
     
     # Create type indicators row
     type_row = {col: _infer_ecotaxa_type(df[col]) for col in df.columns}
@@ -441,8 +442,8 @@ def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path, pulses
     
     # Remove processed images after adding them to the zip
     logger.debug(f"Removing {len(processed_images)} temporary processed images")
-    for processed_path in processed_images:
-        processed_path.unlink()
+    for processed_image in processed_images:
+        processed_image.unlink()
 
 
 def run(ctx, project, force=False, only_tsv=False, max_cores=None):
@@ -492,7 +493,7 @@ def run(ctx, project, force=False, only_tsv=False, max_cores=None):
         logger.info(f"  Collating '{tsv_file}'")
 
         # Merge all data for this sample
-        df, pixel_size = _merge_sample_data(project, sample_id, samples_meta_df, instrument_meta_df,   logger)
+        df, pixel_size = _merge_sample_data(project, sample_id, samples_meta_df, instrument_meta_df, logger)
         # If the merged dataframe is empty, skip to the next sample
         if df.empty:
             logger.warning(f"No imaged particles for sample '{sample_id}', skipping.")
