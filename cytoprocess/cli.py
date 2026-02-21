@@ -127,11 +127,12 @@ def compute_features(ctx, project, force, max_cores):
 @click.argument("project", type=click.Path(exists=True))
 @click.option("--force", is_flag=True, help="Force preparation even if output files already exist")
 @click.option("--only-tsv", is_flag=True, help="Only create TSV files, skip zip file creation (useful to update metadata only)")
+@click.option("--max-cores", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing")
 @click.pass_context
-def prepare(ctx, project, force, only_tsv):
+def prepare(ctx, project, force, only_tsv, max_cores):
     """Prepare .tsv and images for EcoTaxa."""
     from cytoprocess.commands import prepare
-    prepare.run(ctx, project, force=force, only_tsv=only_tsv)
+    prepare.run(ctx, project, force=force, only_tsv=only_tsv, max_cores=max_cores)
 
 
 @cli.command(name="upload")
@@ -179,7 +180,7 @@ def all(ctx, project, force, n_poly, max_cores):
     
     compute_features.run(ctx, project=project, force=force, max_cores=max_cores)
     
-    prepare.run(ctx, project=project, force=force)
+    prepare.run(ctx, project=project, force=force, max_cores=max_cores)
     
     upload.run(ctx, project=project)
     

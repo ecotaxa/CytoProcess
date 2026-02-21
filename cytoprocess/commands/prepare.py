@@ -1,5 +1,7 @@
 import pandas as pd
 import zipfile
+import os
+from multiprocessing import Pool
 import numpy as np
 from pathlib import Path
 import imageio as iio
@@ -125,6 +127,14 @@ def _add_scale_bar(input_path: Path, output_path: Path, pixel_size: float):
         
     # Write the processed image
     iio.imsave(output_path, img, quality=98)
+
+    return output_path
+
+
+def _add_scale_bar_multiprocessing(args):
+    """Wrapper for multiprocessing, with arguments as a single tuple."""
+    image_file, processed_path, pixel_size = args
+    return _add_scale_bar(image_file, processed_path, pixel_size)
 
 
 def _list_samples(project: Path, sample_filter: str | None, logger) -> tuple[pd.DataFrame, list[str]]:
@@ -377,7 +387,7 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
 
 
 def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path, pulses_dir: Path,
-                        ecotaxa_dir: Path, pixel_size: float, logger) -> None:
+                        ecotaxa_dir: Path, pixel_size: float, max_cores: int, logger) -> None:
     """
     Create EcoTaxa ZIP file containing TSV and processed images with scale bars.
     
@@ -389,28 +399,35 @@ def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path, pulses
         images_dir: Directory containing source PNG images
         ecotaxa_dir: Directory for temporary processed images
         pixel_size: Pixel size in mm (for scale bar)
+        max_cores: Maximum number of cores to use
         logger: Logger instance
     """
     pulses_files = list(pulses_dir.glob("*.png"))
     image_files = list(images_dir.glob("*.jpg"))
     processed_images = []
     
+    logger.debug(f"Processing {len(image_files)} images to zip file")
+    # Determine number of cores to use
+    available_cores = os.cpu_count() or 1
+    n_cores = max(1, available_cores - 1)
+    if max_cores is not None:
+        n_cores = min(n_cores, max_cores)
+    logger.debug(f"Using {n_cores} core(s) for parallel processing")
+    # TODO wrap this into a function and reuse it everywhere we do parallel processing
+
+    args = [(image_file, ecotaxa_dir / image_file.name, pixel_size) for image_file in image_files]
+    with Pool(processes=n_cores) as pool:
+        processed_images = pool.map(_add_scale_bar_multiprocessing, args)
+
+    logger.debug(f"Creating zip file '{zip_file}'")
     with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
         # Add the TSV file
         zf.write(tsv_file, tsv_file.name)
-        
-        # Process and add all images from the sample's images directory
-        logger.debug(f"Processing and adding {len(image_files)} images to zip file")
-        
-        for image_file in image_files:
-            # Process image: add scale bar at bottom
-            processed_path = ecotaxa_dir / image_file.name
-            _add_scale_bar(image_file, processed_path, pixel_size)
-            processed_images.append(processed_path)
-            
-            # Add to zip
-            zf.write(processed_path, processed_path.name)
-        
+
+        # Add processed images to zip
+        for processed_image in processed_images:
+            zf.write(processed_image, processed_image.name)
+
         # Add all pulses files to the zip
         logger.debug(f"Adding {len(pulses_files)} pulse plot images to zip file")
         for pulse_file in pulses_files:
@@ -428,7 +445,7 @@ def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path, pulses
         processed_path.unlink()
 
 
-def run(ctx, project, force=False, only_tsv=False):
+def run(ctx, project, force=False, only_tsv=False, max_cores=None):
     """Prepare EcoTaxa TSV/ZIP files for samples."""
     logger = setup_logging(command="prepare", project=project, debug=ctx.obj["debug"])
     
@@ -492,7 +509,7 @@ def run(ctx, project, force=False, only_tsv=False):
         logger.info(f"  Assembling '{zip_file}'")
         images_dir = project / "images" / sample_id
         pulses_dir = project / "pulses" / sample_id
-        _create_ecotaxa_zip(tsv_file, zip_file, images_dir, pulses_dir, ecotaxa_dir, pixel_size, logger)
+        _create_ecotaxa_zip(tsv_file, zip_file, images_dir, pulses_dir, ecotaxa_dir, pixel_size, max_cores, logger)
         # TODO move image processing in extract_images
 
     log_command_success(logger, "Prepare EcoTaxa files")
