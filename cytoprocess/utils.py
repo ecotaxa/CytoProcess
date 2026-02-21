@@ -203,6 +203,8 @@ def get_sample_files(project: str, logger: logging.Logger, kind: str = "json", c
         >>> files = get_sample_files('/path/to/project', kind='zip', sample='my_sample')
     """
     
+    # TODO regroup all files in work, to clean up the project structure and avoid having to look in different directories for different file types.
+
     # Determine directory and extension based on kind
     if kind == "json":
         target_dir = Path(project) / "converted"
