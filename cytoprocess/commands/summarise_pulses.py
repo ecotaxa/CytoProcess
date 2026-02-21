@@ -185,6 +185,8 @@ def run(ctx, project, n_poly=10, force=False, max_cores=None):
 
             if particles_data is None or len(particles_data) == 0:
                 logger.warning(f"No particles found in '{json_file.name}'")
+                # Create an empty parquet file to avoid reprocessing this file in the future
+                pd.DataFrame().to_parquet(output_file, index=False)
                 continue
             
             logger.debug(f"Found {len(particles_data)} particles in '{json_file.name}'")

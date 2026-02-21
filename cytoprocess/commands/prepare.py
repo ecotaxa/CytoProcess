@@ -270,6 +270,11 @@ def _merge_sample_data(project: Path, sample_id: str, samples_meta_df: pd.DataFr
     image_features_df = pd.read_parquet(work_dir / f"{sample_id}_image_features.parquet")
     pulses_df = pd.read_parquet(work_dir / f"{sample_id}_pulses.parquet")
 
+    # If the cytometric dataframe is empty, it means there were no particles detected for this sample,
+    # so we can skip the rest of the processing and return empty results
+    if cytometric_df.empty:
+        return pd.DataFrame(), 0.0
+
     # Extract pixel size from our custom column and remove it
     pixel_size = instrument_meta.iloc[0]['__pixel_size__']
     instrument_meta = instrument_meta.drop(columns=['__pixel_size__'])
@@ -471,6 +476,10 @@ def run(ctx, project, force=False, only_tsv=False):
 
         # Merge all data for this sample
         df, pixel_size = _merge_sample_data(project, sample_id, samples_meta_df, instrument_meta_df,   logger)
+        # If the merged dataframe is empty, skip to the next sample
+        if df.empty:
+            logger.warning(f"No imaged particles for sample '{sample_id}', skipping.")
+            continue
 
         # Prepare TSV file
         _prepare_ecotaxa_tsv(df, tsv_file, logger)
