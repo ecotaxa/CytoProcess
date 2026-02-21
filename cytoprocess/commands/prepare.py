@@ -372,7 +372,7 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
         f.write('\t'.join([type_row[col] for col in df.columns]) + '\n')
         df.to_csv(f, sep='\t', index=False, header=False)
     
-    logger.debug(f"Saved {df.shape[1]} fields for {df.shape[0]} objects to '{tsv_file}'")
+    logger.debug(f"Saved {df.shape[1]} fields for {int(df.shape[0]/2)} objects to '{tsv_file}'")
     return df
 
 
