@@ -223,6 +223,7 @@ def run(ctx, project, list_keys=False, force=False):
                 multiple_regions = []
 
                 # Process each particle
+                first_particle = True
                 for particle in particles_data:
                     # Only process particles with images
                     if not particle.get('hasImage', False):
@@ -266,7 +267,10 @@ def run(ctx, project, list_keys=False, force=False):
                         value = _get_parameter_value(parameters, json_path)
                         
                         if value is None:
-                            logger.debug(f"Path '{json_path}' not found in particle {particle_idx} of '{json_file.name}'")
+                            # Display the debug message only for the first particle, to avoid flooding
+                            # the logs since all particles should be missing the same variables
+                            if first_particle:
+                                logger.debug(f"Path '{json_path}' not found in particles of '{json_file.name}'")
                         else:
                             if value == 'NaN':
                                 logger.debug(f"Path '{json_path}' has value 'NaN' for particle {particle_idx} of '{json_file.name}'")
@@ -274,6 +278,7 @@ def run(ctx, project, list_keys=False, force=False):
                             row[full_column_name] = value
                     
                     rows.append(row)
+                    first_particle = False
                 
                 if not rows:
                     logger.warning(f"No particle data extracted from '{json_file.name}'")
