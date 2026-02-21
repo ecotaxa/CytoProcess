@@ -114,8 +114,8 @@ def run(ctx, project, list_keys=False, force=False):
                     first_particle = next(parser, None)
                     
                 if first_particle is None:
-                       logger.warning(f"No particles found in '{json_file.name}'")
-                       continue
+                    logger.warning(f"No particles found in '{json_file.name}'")
+                    continue
                     
                 parameters = first_particle.get('parameters', [])
                 
