@@ -8,83 +8,294 @@ ecotaxa:
   upload_timeout_seconds: 300 
 
 
-# This part maps instrument metadata items from the .json files to
+# This part maps instrument metadata fields from the .json files to
 # column names for import into EcoTaxa.
-# Metadata fields in EcoTaxa are organised in three levels:
-#    sample, acq (acquisition), and process (processing)
-# Run `cytoprocess extract_meta --list <project>` to see all available fields.
+#
+# Metadata in EcoTaxa is organised in three levels:
+#    sample, acq (acquisition), and process
+#
+# Run `cytoprocess extract_meta --list <project>` to list all available fields.
+#
 # Edit the sections below to customize which fields are extracted,
 # at which EcoTaxa level they are associated, and how they will be named.
+# EcoTaxa names are lowercased upon import, so use names like 'my_variable'
+# instead of 'myVariable', which would be turned into the less readable 'myvariable'.
 sample:  # maximum of 60 fields
-  serialNumber: serial_number
-  name: instrument_name
-  measurementSettings.CytoSettings.CytoSettings.Model: model
-  measurementSettings.CytoSettings.CytoSettings.HardwareNumber: hardware_number
-  measurementSettings.CytoSettings.CytoSettings.Softwareversion: software_version
-  measurementSettings.CytoSettings.CytoSettings.LaserInfo[].Wavelength: laser_wavelengths
-  measurementSettings.CytoSettings.CytoSettings.LaserInfo[].MaxPower: laser_max_powers
-  measurementSettings.CytoSettings.CytoSettings.LaserBeamWidth: laser_beam_width
-  laserBeamWidth: beam_width
-  sampleCoreSpeed: sample_core_speed
-  channels[].description: channel_descriptions
+  channels[].description: channels_description
+  laserBeamWidth: laser_beam_width
+  measurementResults.PMTtemperature: pmt_temperature
+  measurementResults.duration: duration
+  measurementResults.laserTemperature: laser_temperature
+  measurementResults.pressureAbsolute: pressure_absolute
+  measurementResults.pumpedVolume: pumped_volume
+  measurementResults.sheathTemperature: sheath_temperature
+  measurementResults.start: start_date_time
+  measurementResults.systemTemperature: system_temperature
+  measurementSettings.CytoSettings.CytoSettings.CytoUSBSettings.CytoUSBVersion: cyto_usb_version
+  measurementSettings.CytoSettings.CytoSettings.DCSamplePump.CalibrationDate: calibration_date
+  measurementSettings.CytoSettings.CytoSettings.ImagePixelSize: image_pixel_size
+  measurementSettings.CytoSettings.CytoSettings.LaserInfo[].ConfiguredPower: laser_configured_power
+  measurementSettings.CytoSettings.CytoSettings.LaserInfo[].Wavelength: laser_wavelength
   measurementSettings.CytoSettings.CytoSettings.OpticalMagnification: optical_magnification
+  measurementSettings.CytoSettings.CytoSettings.SubLoopVolume_uL: sub_loop_volume_ul
+  measurementSettings.CytoSettings.CytoSettings.hasExternalPinchValve: has_external_pinch_valve
+  measurementSettings.CytoSettings.CytoSettings.iif.Camera.CameraName: camera_name
+  measurementSettings.CytoSettings.CytoSettings.iif.Camera.Description: camera_description
+  measurementSettings.CytoSettings.CytoSettings.iif.Camera.FirmwareVersion: camera_firmware_version
+  measurementSettings.CytoSettings.CytoSettings.iif.Camera.FpgaVersion: camera_fpga_version
+  measurementSettings.CytoSettings.CytoSettings.iif.Camera.LensDescription: camera_lens_description
+  measurementSettings.CytoSettings.CytoSettings.iif.Camera.ModelName: camera_model_name
+  measurementSettings.CytoSettings.CytoSettings.iif.Camera.SerialNumber: camera_serial_number
+  measurementSettings.CytoSettings.CytoSettings.iif.Camera.VendorName: camera_vendor_name
+  measurementSettings.CytoSettings.CytoSettings.iif.opticalMagnification: optical_magnification
+  measurementSettings.CytoSettings.SamplePompSpeed: sample_pomp_speed
+  measurementSettings.CytoSettings.SeperateConcentration: seperate_concentration
+  measurementSettings.CytoSettings.SmartTriggerSettingDescription: smart_trigger_setting_description
+  measurementSettings.CytoSettings.SmartTriggerSettings[].ChannelName: smart_trigger_channel_name
+  measurementSettings.CytoSettings.SmartTriggerSettings[].Maximum: smart_trigger_maximum
+  measurementSettings.CytoSettings.SmartTriggerSettings[].Minimum: smart_trigger_minimum
+  measurementSettings.CytoSettings.SmartTriggeringEnabled: smart_triggering_enabled
+  measurementSettings.CytoSettings.TabName: tab_name
+  measurementSettings.CytoSettings.UserRemarks: user_remarks
+  measurementSettings.CytoSettings.PMTLevelPreset: pmt_level_preset
+  measurementSettings.CytoSettings.PMTlevels_str: pmt_levels
+  name: instrument_name
+  serialNumber: instrument_serial_number
 
 acq:  # maximum of 27 fields
-  measurementResults.start: start_time
-  measurementResults.duration: duration
-  measurementResults.analysedVolume: analysed_volume
-  measurementResults.pumpedVolume: pumped_volume
-  measurementResults.particleCount: particle_count
-  measurementResults.particleConcentration: particle_concentration
-  measurementResults.pressureAbsolute: pressure_absolute
-  measurementResults.pressureDifferential: pressure_differential
-  measurementResults.sheathTemperature: sheath_temperature
-  measurementResults.buoyTemperature: buoy_temperature
-  measurementSettings.CytoSettings.SamplePompSpeed: sample_pump_speed
-  measurementSettings.CytoSettings.TriggerLevel1e: trigger_level
-  measurementSettings.CytoSettings.PMTlevels: pmt_levels
-  measurementSettings.CytoSettings.MaxTimeOut: max_timeout
+  measurementSettings.CytoSettings.CytoSettings.ExternalTriggerFeedbackLed: external_trigger_feedback_led
+  measurementSettings.CytoSettings.CytoSettings.ExternalTriggerIsPulse: external_trigger_is_pulse
+  measurementSettings.CytoSettings.CytoSettings.HasExternalTrigger: has_external_trigger
+  measurementSettings.CytoSettings.CytoSettings.iif.CameraDelay: camera_delay
+  measurementSettings.CytoSettings.CytoSettings.iif.CameraDelayOffset_us: camera_delay_offset_us
+  measurementSettings.CytoSettings.CytoSettings.iif.ExposureTime: exposure_time
+  measurementSettings.CytoSettings.CytoSettings.iif.FlashDurationCount: flash_duration_count
+  measurementSettings.CytoSettings.CytoSettings.iif.framerate: framerate
+  measurementSettings.CytoSettings.IIFPhotographLargeParticles: iif_photograph_large_particles
+  measurementSettings.CytoSettings.IIFRestrictFwsRange: iif_restrict_fws_range
+  measurementSettings.CytoSettings.IIFRoiName: iif_roi_name
+  measurementSettings.CytoSettings.IIFSetDefintionFileName: iif_set_defintion_file_name
+  measurementSettings.CytoSettings.IIFSetSelectionInfo[].NumberOfImages: number_of_images_in_set
+  measurementSettings.CytoSettings.IIFSetSelectionInfo[].WantImages: want_images_in_set
+  measurementSettings.CytoSettings.IIFUseSetDefintionSelector: iif_use_set_defintion_selector
+  measurementSettings.CytoSettings.IIFuseSmartGrid: iif_use_smart_grid
+  measurementSettings.CytoSettings.IIFuseTargetAll: iif_use_target_all
+  measurementSettings.CytoSettings.IIFuseTargetRange: iif_use_target_range
+  measurementSettings.CytoSettings.LimitParticleRate: limit_particle_rate
+  measurementSettings.CytoSettings.MaxAnalysedVolume: max_analysed_volume
+  measurementSettings.CytoSettings.MaxNumberFotoText: max_number_foto_text
+  measurementSettings.CytoSettings.MaxNumberParticleText: max_number_particle_text
+  measurementSettings.CytoSettings.MaxParticleRate: max_particle_rate
+  measurementSettings.CytoSettings.MaxPumpedVolume: max_pumped_volume
+  measurementSettings.CytoSettings.TriggerChannel: trigger_channel
+  measurementSettings.CytoSettings.TriggerLevel1e: trigger_level1e
 
 process:  # maximum of 30 fields
-  measurementSettings.CytoSettings.CytoSettings.SampleFrequency: sample_frequency
-  measurementSettings.CytoSettings.CytoSettings.ImagePixelSize: image_pixel_size
+  measurementSettings.CytoSettings.CalibrateCamera: calibrate_camera
   measurementSettings.CytoSettings.CytoSettings.CameraPixelSize: camera_pixel_size
-  measurementSettings.CytoSettings.CytoSettings.Sample_to_um_ConversionFactor: sample_to_um_factor
-  measurementSettings.CytoSettings.CytoSettings.Curvature: curvature
-  measurementSettings.CytoSettings.ChannelDataConversion[]: channel_data_conversions
-  measurementSettings.CytoSettings.IIFParameters.BeamWidth: iif_beam_width
-  measurementSettings.CytoSettings.IIFParameters.CoreSpeed: iif_core_speed
-  measurementResults.pictureCount: picture_count
-  measurementSettings.CytoSettings.CytoSettings.iif.opticalMagnification: iif_optical_magnification
-  measurementSettings.CytoSettings.CytoSettings.triggerlevelConstant: trigger_level_constant
+  measurementSettings.CytoSettings.CytoSettings.EnableCompressIIFImages: enable_compress_iif_images
+  measurementSettings.CytoSettings.CytoSettings.EnableSaveUnmatchedIIFFoto: enable_save_unmatched_iif_foto
+  measurementSettings.CytoSettings.CytoSettings.iif.AllwaysTakeLargerParticlePictures: allways_take_larger_particle_pictures
+  measurementSettings.CytoSettings.CytoSettings.iif.BigParticleThreshold: big_particle_threshold
+  measurementSettings.CytoSettings.CytoSettings.iif.Brightness: brightness
+  measurementSettings.CytoSettings.CytoSettings.iif.Gain: gain
+  measurementSettings.CytoSettings.CytoSettings.iif.HorizontalFlip: horizontal_flip
+  measurementSettings.CytoSettings.CytoSettings.iif.ImageScaleMuPerPixelP: image_scale_mu_per_pixel_p
+  measurementSettings.CytoSettings.CytoSettings.iif.VerticalFlip: vertical_flip
+  measurementSettings.CytoSettings.CytoSettings.iif.dBGain: db_gain
+  measurementSettings.CytoSettings.CytoSettings.triggerlevelConstant: triggerlevel_constant
+  measurementSettings.CytoSettings.CytoSettings.triggerlevelOffset: triggerlevel_offset
+  measurementSettings.CytoSettings.IIFFwsRatioMax: iif_fws_ratio_max
+  measurementSettings.CytoSettings.IIFFwsRatioMin: iif_fws_ratio_min
+  measurementSettings.CytoSettings.MeasureNoiseLevels: measure_noise_levels
+  measurementSettings.CytoSettings.StopAfterTime: stop_after_time
+  measurementSettings.CytoSettings.StopAtAnalysedVolume: stop_at_analysed_volume
+  measurementSettings.CytoSettings.StopAtAnalysedVolumeString: stop_at_analysed_volume
+  measurementSettings.CytoSettings.StopAtFotos: stop_at_fotos
+  measurementSettings.CytoSettings.StopAtFotosString: stop_at_fotos
+  measurementSettings.CytoSettings.StopAtParticles: stop_at_particles
+  measurementSettings.CytoSettings.StopAtParticlesString: stop_at_particles
+  measurementSettings.CytoSettings.StopAtPumpedVolume: stop_at_pumped_volume
+  measurementSettings.CytoSettings.StopAtPumpedVolumeString: stop_at_pumped_volume
+  measurementSettings.CytoSettings.StopafterTimertext: stop_after_timer
 
 
 # This part maps cytometric features from particles in the .json files to
 # column names for import into EcoTaxa.
+#
 # Object-level features are extracted from each particle's "parameters" list.
 # Paths are in the format "description.key" where description identifies
 # the parameter (e.g., "FWS", "Sidewards Scatter", "Fl Red") and key is the
 # specific measurement (e.g., "length", "total", "maximum").
+#
 # Run `cytoprocess extract_cyto --list <project>` to list all available features.
+#
 # Edit the section below to customize which features are extracted and how they are named.
+# Only the features actually present in the file will be extracted, so you can list more
+# features than you expect to be present and only the available ones will be imported.
 object:
-  FWS.length: fws_length
-  FWS.total: fws_total
-  FWS.maximum: fws_maximum
-  FWS.average: fws_average
-  FWS.inertia: fws_inertia
-  FWS.centreOfGravity: fws_cog
-  FWS.fillFactor: fws_fill_factor
-  FWS.asymmetry: fws_asymmetry
-  FWS.numberOfCells: fws_num_cells
-  Sidewards Scatter.length: sws_length
-  Sidewards Scatter.total: sws_total
-  Sidewards Scatter.maximum: sws_maximum
-  Sidewards Scatter.average: sws_average
-  Fl Yellow.total: fl_yellow_total
-  Fl Yellow.maximum: fl_yellow_maximum
-  Fl Orange.total: fl_orange_total
-  Fl Orange.maximum: fl_orange_maximum
-  Fl Red.total: fl_red_total
-  Fl Red.maximum: fl_red_maximum
+  Curvature.asymmetry: curvature_asymmetry
   Curvature.average: curvature_average
+  Curvature.centreOfGravity: curvature_centre_of_gravity
+  Curvature.fillFactor: curvature_fill_factor
+  Curvature.first: curvature_first
+  Curvature.inertia: curvature_inertia
+  Curvature.last: curvature_last
+  Curvature.length: curvature_length
+  Curvature.maximum: curvature_max
+  Curvature.minimum: curvature_min
+  Curvature.numberOfCells: curvature_number_of_cells
+  Curvature.sampleLength: curvature_sample_length
+  Curvature.swscov: curvature_swscov
+  Curvature.total: curvature_total
+  Curvature.variableLength: curvature_variable_length
+  Fl Orange.asymmetry: fl_orange_asymmetry
+  Fl Orange.average: fl_orange_average
+  Fl Orange.centreOfGravity: fl_orange_centre_of_gravity
+  Fl Orange.fillFactor: fl_orange_fill_factor
+  Fl Orange.first: fl_orange_first
+  Fl Orange.inertia: fl_orange_inertia
+  Fl Orange.last: fl_orange_last
+  Fl Orange.length: fl_orange_length
+  Fl Orange.maximum: fl_orange_max
+  Fl Orange.minimum: fl_orange_min
+  Fl Orange.numberOfCells: fl_orange_number_of_cells
+  Fl Orange.sampleLength: fl_orange_sample_length
+  Fl Orange.swscov: fl_orange_swscov
+  Fl Orange.total: fl_orange_total
+  Fl Orange.variableLength: fl_orange_variable_length
+  Fl Red.asymmetry: fl_red_asymmetry
+  Fl Red.average: fl_red_average
+  Fl Red.centreOfGravity: fl_red_centre_of_gravity
+  Fl Red.fillFactor: fl_red_fill_factor
+  Fl Red.first: fl_red_first
+  Fl Red.inertia: fl_red_inertia
+  Fl Red.last: fl_red_last
+  Fl Red.length: fl_red_length
+  Fl Red.maximum: fl_red_max
+  Fl Red.minimum: fl_red_min
+  Fl Red.numberOfCells: fl_red_number_of_cells
+  Fl Red.sampleLength: fl_red_sample_length
+  Fl Red.swscov: fl_red_swscov
+  Fl Red.total: fl_red_total
+  Fl Red.variableLength: fl_red_variable_length
+  Fl Yellow.asymmetry: fl_yellow_asymmetry
+  Fl Yellow.average: fl_yellow_average
+  Fl Yellow.centreOfGravity: fl_yellow_centre_of_gravity
+  Fl Yellow.fillFactor: fl_yellow_fill_factor
+  Fl Yellow.first: fl_yellow_first
+  Fl Yellow.inertia: fl_yellow_inertia
+  Fl Yellow.last: fl_yellow_last
+  Fl Yellow.length: fl_yellow_length
+  Fl Yellow.maximum: fl_yellow_max
+  Fl Yellow.minimum: fl_yellow_min
+  Fl Yellow.numberOfCells: fl_yellow_number_of_cells
+  Fl Yellow.sampleLength: fl_yellow_sample_length
+  Fl Yellow.swscov: fl_yellow_swscov
+  Fl Yellow.total: fl_yellow_total
+  Fl Yellow.variableLength: fl_yellow_variable_length
+  Forward Scatter Left.asymmetry: fws_l_asymmetry
+  Forward Scatter Left.average: fws_l_average
+  Forward Scatter Left.centreOfGravity: fws_l_centre_of_gravity
+  Forward Scatter Left.fillFactor: fws_l_fill_factor
+  Forward Scatter Left.first: fws_l_first
+  Forward Scatter Left.inertia: fws_l_inertia
+  Forward Scatter Left.last: fws_l_last
+  Forward Scatter Left.length: fws_l_length
+  Forward Scatter Left.maximum: fws_l_max
+  Forward Scatter Left.minimum: fws_l_min
+  Forward Scatter Left.numberOfCells: fws_l_number_of_cells
+  Forward Scatter Left.sampleLength: fws_l_sample_length
+  Forward Scatter Left.swscov: fws_l_swscov
+  Forward Scatter Left.total: fws_l_total
+  Forward Scatter Left.variableLength: fws_l_variable_length
+  Forward Scatter Right.asymmetry: fws_r_asymmetry
+  Forward Scatter Right.average: fws_r_average
+  Forward Scatter Right.centreOfGravity: fws_r_centre_of_gravity
+  Forward Scatter Right.fillFactor: fws_r_fill_factor
+  Forward Scatter Right.first: fws_r_first
+  Forward Scatter Right.inertia: fws_r_inertia
+  Forward Scatter Right.last: fws_r_last
+  Forward Scatter Right.length: fws_r_length
+  Forward Scatter Right.maximum: fws_r_max
+  Forward Scatter Right.minimum: fws_r_min
+  Forward Scatter Right.numberOfCells: fws_r_number_of_cells
+  Forward Scatter Right.sampleLength: fws_r_sample_length
+  Forward Scatter Right.swscov: fws_r_swscov
+  Forward Scatter Right.total: fws_r_total
+  Forward Scatter Right.variableLength: fws_r_variable_length
+  FWS L.asymmetry: fws_l_asymmetry
+  FWS L.average: fws_l_average
+  FWS L.centreOfGravity: fws_l_centre_of_gravity
+  FWS L.fillFactor: fws_l_fill_factor
+  FWS L.first: fws_l_first
+  FWS L.inertia: fws_l_inertia
+  FWS L.last: fws_l_last
+  FWS L.length: fws_l_length
+  FWS L.maximum: fws_l_max
+  FWS L.minimum: fws_l_min
+  FWS L.numberOfCells: fws_l_number_of_cells
+  FWS L.sampleLength: fws_l_sample_length
+  FWS L.swscov: fws_l_swscov
+  FWS L.total: fws_l_total
+  FWS L.variableLength: fws_l_variable_length
+  FWS R.asymmetry: fws_r_asymmetry
+  FWS R.average: fws_r_average
+  FWS R.centreOfGravity: fws_r_centre_of_gravity
+  FWS R.fillFactor: fws_r_fill_factor
+  FWS R.first: fws_r_first
+  FWS R.inertia: fws_r_inertia
+  FWS R.last: fws_r_last
+  FWS R.length: fws_r_length
+  FWS R.maximum: fws_r_max
+  FWS R.minimum: fws_r_min
+  FWS R.numberOfCells: fws_r_number_of_cells
+  FWS R.sampleLength: fws_r_sample_length
+  FWS R.swscov: fws_r_swscov
+  FWS R.total: fws_r_total
+  FWS R.variableLength: fws_r_variable_length
+  FWS.asymmetry: fws_asymmetry
+  FWS.average: fws_average
+  FWS.centreOfGravity: fws_centre_of_gravity
+  FWS.fillFactor: fws_fill_factor
+  FWS.first: fws_first
+  FWS.inertia: fws_inertia
+  FWS.last: fws_last
+  FWS.length: fws_length
+  FWS.maximum: fws_max
+  FWS.minimum: fws_min
+  FWS.numberOfCells: fws_number_of_cells
+  FWS.sampleLength: fws_sample_length
+  FWS.swscov: fws_swscov
+  FWS.total: fws_total
+  FWS.variableLength: fws_variable_length
+  Sidewards Scatter.asymmetry: sws_asymmetry
+  Sidewards Scatter.average: sws_average
+  Sidewards Scatter.centreOfGravity: sws_centre_of_gravity
+  Sidewards Scatter.fillFactor: sws_fill_factor
+  Sidewards Scatter.first: sws_first
+  Sidewards Scatter.inertia: sws_inertia
+  Sidewards Scatter.last: sws_last
+  Sidewards Scatter.length: sws_length
+  Sidewards Scatter.maximum: sws_max
+  Sidewards Scatter.minimum: sws_min
+  Sidewards Scatter.numberOfCells: sws_number_of_cells
+  Sidewards Scatter.sampleLength: sws_sample_length
+  Sidewards Scatter.swscov: sws_swscov
+  Sidewards Scatter.total: sws_total
+  Sidewards Scatter.variableLength: sws_variable_length
+  SWS.asymmetry: sws_asymmetry
+  SWS.average: sws_average
+  SWS.centreOfGravity: sws_centre_of_gravity
+  SWS.fillFactor: sws_fill_factor
+  SWS.first: sws_first
+  SWS.inertia: sws_inertia
+  SWS.last: sws_last
+  SWS.length: sws_length
+  SWS.maximum: sws_max
+  SWS.minimum: sws_min
+  SWS.numberOfCells: sws_number_of_cells
+  SWS.sampleLength: sws_sample_length
+  SWS.swscov: sws_swscov
+  SWS.total: sws_total
+  SWS.variableLength: sws_variable_length
