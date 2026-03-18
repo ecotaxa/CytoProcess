@@ -1,4 +1,5 @@
 import os
+import shutil
 import platform
 import subprocess
 import urllib.request
@@ -87,8 +88,13 @@ def _download_latest_release(logger) -> str:
         urllib.request.urlretrieve(download_url, tmp_path)
         logger.debug(f"Downloaded to {tmp_path}")
         
+        # clean up the existing cyz2json_dir if it exists
+        if cyz2json_dir.exists():
+            logger.debug(f"Removing existing cyz2json directory at {cyz2json_dir}")
+            shutil.rmtree(cyz2json_dir)
+                    
         # extract the zip file
-        cyz2json_dir.mkdir(parents=True, exist_ok=True)
+        cyz2json_dir.mkdir(parents=True)
         logger.debug(f"Extracting to {cyz2json_dir}")
         with zipfile.ZipFile(tmp_path, 'r') as zip_ref:
             zip_ref.extractall(cyz2json_dir)
@@ -123,11 +129,15 @@ def _download_latest_release(logger) -> str:
     return str(symlink_path)
 
 
-def _check_or_get_cyz2json(logger) -> str:
+def _check_or_get_cyz2json(logger, force: bool = False) -> str:
     """Get the path to the cyz2json executable, downloading if necessary."""
     bin_dir = _get_or_create_bin_dir()
     executable_name = _get_executable_name()
     executable_path = bin_dir / executable_name
+
+    if force:
+        logger.info("Downloading latest cyz2json release")
+        return _download_latest_release(logger)
     
     if not executable_path.exists():
         logger.info(f"Cyz2Json not found at {executable_path}, downloading")
@@ -137,11 +147,11 @@ def _check_or_get_cyz2json(logger) -> str:
     return str(executable_path)
 
 
-def run(ctx):
+def run(ctx, force: bool = False):
     logger = setup_logging(command="install", project=None, debug=ctx.obj["debug"])
     log_command_start(logger, "Installing cyz2json", project=None)
     try:
-        path = _check_or_get_cyz2json(logger)
+        path = _check_or_get_cyz2json(force=force, logger=logger)
         result = subprocess.run([path, '--version'], check=True, capture_output=True, text=True)
         logger.info(f"cyz2json available at {path}, at version {result.stdout.strip()}")
     except Exception as e:

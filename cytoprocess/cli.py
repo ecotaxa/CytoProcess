@@ -33,11 +33,12 @@ def cli(ctx, debug, sample):
 
 
 @cli.command(name="install")
+@click.option("--force", is_flag=True, default=False, help="Force (re)installation of the latest release even if Cyz2Json already exists")
 @click.pass_context
-def install(ctx):
+def install(ctx, force):
     """Install depency: Cyz2Json converter."""
     from cytoprocess.commands import install
-    install.run(ctx)
+    install.run(ctx, force=force)
 
 
 @cli.command(name="create")
