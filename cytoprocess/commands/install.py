@@ -140,7 +140,7 @@ def _check_or_get_cyz2json(logger, force: bool = False) -> str:
         return _download_latest_release(logger)
     
     if not executable_path.exists():
-        logger.info(f"Cyz2Json not found at {executable_path}, downloading")
+        logger.info(f"cyz2json not found at {executable_path}, downloading")
         return _download_latest_release(logger)
     
     logger.debug(f"Using existing cyz2json at {executable_path}")
