@@ -121,7 +121,7 @@ def _download_latest_release(logger) -> str:
         logger.debug(f"Creating symlink at {symlink_path} -> {executable_path}")
         os.symlink(executable_path, symlink_path)
 
-        logger.info(f"Successfully installed cyz2json to {symlink_path}")
+        logger.debug(f"Successfully installed cyz2json to {symlink_path}")
     
     except Exception as e:
         raiseCytoError(f"Failed to download and install cyz2json: {e}", logger)
