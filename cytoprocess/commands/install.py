@@ -13,6 +13,7 @@ from cytoprocess.utils import log_command_start, log_command_success, setup_logg
 def _get_or_create_bin_dir() -> Path:
     """Get (and create if necessary) the directory for storing executables."""
     bin_dir = Path.home() / ".bin"
+    # TODO find a more idiomatic location of Windows (e.g. %APPDATA%/cyz2json or something like that) and use that on Windows instead of ~/.bin
 
     # create the directory if it doesn't exist
     bin_dir.mkdir(parents=True, exist_ok=True)
