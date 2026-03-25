@@ -258,7 +258,7 @@ def list_sample_assets(project: str, kind: str, logger: logging.Logger, ctx=None
     # Determine directory and extension based on kind
     if kind == "cyz":
         command= "create"
-    if kind == "json":
+    elif kind == "json":
         command = "convert"
     else:
         raiseCytoError(f"Invalid kind '{kind}'", logger)
