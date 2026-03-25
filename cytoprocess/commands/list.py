@@ -17,7 +17,7 @@ def run(ctx, project, extra_fields=DEFAULT_EXTRA_FIELDS):
 
 
     # If there are none, warn and exit
-    if (len(raw_files) == 0):
+    if not raw_files:
         logger.warning(f"Then copy/move cyz files to '{project}/raw'")
         return
 
