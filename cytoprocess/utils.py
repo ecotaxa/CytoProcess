@@ -8,6 +8,7 @@ from datetime import datetime
 import copy
 import re
 import math
+import yaml
 
 
 def setup_logging(command: str = None, project: str = None, debug: bool = False) -> logging.Logger:
@@ -180,6 +181,34 @@ def get_json_section(json_file: Path, key: str, logger: logging.Logger):
     return data
 
 
+def load_config(project: str, logger: logging.Logger) -> dict:
+    """
+    Load the configuration from the project's config.yaml file.
+    
+    Args:
+        project: The project directory path
+        logger: The logger instance to use for logging
+        
+    Returns:
+        The configuration as a dictionary, or an empty dict if not found.
+        
+    Examples:
+        >>> logger = logging.getLogger("cytoprocess.example")
+        >>> config = load_config('/path/to/project', logger)
+    """
+
+    config_file = Path(project) / "config" / "config.yaml"
+    
+    if not config_file.exists():
+        raiseCytoError(f"Configuration file not found: '{config_file}', run 'cytoprocess create {project}' again.", logger)
+    
+    logger.info(f"Read metadata fields list from '{config_file}'")
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+
+    return config
+
+
 def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path:
     """
     Generate the expected file name for a sample of a given kind.
@@ -204,7 +233,7 @@ def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path
         return f"work/{sample}/converted_data.json"
     elif kind == "images" or kind == "pulses_plots":
         return f"work/{sample}/{kind}"
-    elif kind == "pulses" or kind == "image_features" or kind == "cytometric_features":
+    elif kind == "metadata" or kind == "pulses" or kind == "image_features" or kind == "cytometric_features":
         return f"work/{sample}/{kind}.parquet"
     elif kind == "zip" or kind == "ecotaxa":
         return f"ecotaxa/{sample}.zip"
@@ -229,6 +258,8 @@ def list_sample_assets(project: str, kind: str, logger: logging.Logger, ctx=None
     # Determine directory and extension based on kind
     if kind == "cyz":
         command= "create"
+    if kind == "json":
+        command = "convert"
     else:
         raiseCytoError(f"Invalid kind '{kind}'", logger)
     

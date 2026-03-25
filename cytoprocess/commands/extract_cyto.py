@@ -1,7 +1,7 @@
 import yaml
 import pandas as pd
 from pathlib import Path
-from cytoprocess.utils import get_sample_files, ensure_project_dir, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.utils import get_sample_files, ensure_project_dir, get_json_section, load_config, setup_logging, log_command_start, log_command_success, raiseCytoError
 import ijson
 import numpy as np
 
@@ -146,20 +146,12 @@ def run(ctx, project, list_keys=False, force=False):
     
     else:
         # Normal operation: extract cytometric features based on config.yaml
-
-        config_file = Path(project) / "config" / "config.yaml"
-        logger.info(f"Read selected cytometric features list from '{config_file}'")
-        
-        if not config_file.exists():
-            raiseCytoError(f"Configuration file not found: '{config_file}', run 'cytoprocess create {project}' again.", logger)
-        
-        with open(config_file, 'r') as f:
-            config = yaml.safe_load(f)
+        config = load_config(project, logger)
         
         # Get the 'object' section from config
         object_config = config.get('object')
         if not object_config or not isinstance(object_config, dict):
-            raiseCytoError(f"No 'object' section found in '{config_file}'. Configuration file must contain an 'object' section with cytometric feature mappings.", logger)
+            raiseCytoError(f"No 'object' section found. The configuration file must contain an 'object' section with cytometric feature mappings.", logger)
         
         logger.debug(f"Found {len(object_config)} mappings in 'object' section")
         

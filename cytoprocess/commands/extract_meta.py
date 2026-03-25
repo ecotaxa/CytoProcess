@@ -179,19 +179,8 @@ def run(ctx, project, list_keys=False):
 
     else:
         # Otherwise, in normal operations, extract specific metadata items based on config.yaml
-
-        config_file = Path(project) / "config" / "config.yaml"
-        
-        if not config_file.exists():
-            raiseCytoError(f"Configuration file not found: '{config_file}', run 'cytoprocess create {project}' again.", logger)
-        
-        logger.info(f"Read metadata fields list from '{config_file}'")
-        with open(config_file, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        # Prepare data structure: list of dicts, one per JSON file
-        metadata_rows = []
-        
+        config = load_config(project, logger)
+                
         for json_file in json_files:
             try:
                 logger.debug(f"Extracting metadata from '{json_file.name}'")
