@@ -1,4 +1,3 @@
-import logging
 import pandas as pd
 from pathlib import Path
 from cytoprocess.utils import ensure_project_dir, list_sample_assets, setup_logging, log_command_start, log_command_success
