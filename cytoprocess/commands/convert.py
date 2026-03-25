@@ -51,7 +51,7 @@ def run(ctx, project, force=False):
         
         try:
             # Build and log the command
-            command = [cyz2json_path, str(cyz_file), "--raw", "--imaging-set-information"]
+            command = [cyz2json_path, str(cyz_file), "--raw", "--imaging-set-information", "--image-processing", "--image-processing-margin-percentage 0"]
             command.extend(set_definition_command)
             command.extend(["--output", str(json_file)])
             logger.debug(f"Running command: {' '.join(command)}")
