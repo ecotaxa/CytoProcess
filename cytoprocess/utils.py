@@ -180,65 +180,74 @@ def get_json_section(json_file: Path, key: str, logger: logging.Logger):
     return data
 
 
-def get_sample_files(project: str, logger: logging.Logger, kind: str = "json", ctx=None) -> list:
+def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path:
     """
-    Get a list of files from a project's directory.
+    Generate the expected file name for a sample of a given kind.
+    
+    Args:
+        sample: The sample name (without extension)
+        kind: The type of file/directory
+        logger: The logger instance to use for logging
+        
+    Returns:
+        The expected file name as a Path object.
+        
+    Examples:
+        >>> path_to_sample_asset('my_sample', 'json', logger)
+        >>> path_to_sample_asset('my_sample', 'cyz', logger)
+        >>> path_to_sample_asset('my_sample', 'zip', logger)
+    """
+
+    if kind == "cyz" or kind == "raw":
+        return  f"raw/{sample}.cyz"
+    elif kind == "json" or kind == "converted":
+        return f"work/{sample}/converted_data.json"
+    elif kind == "images" or kind == "pulses_plots":
+        return f"work/{sample}/{kind}"
+    elif kind == "pulses" or kind == "image_features" or kind == "cytometric_features":
+        return f"work/{sample}/{kind}.parquet"
+    elif kind == "zip" or kind == "ecotaxa":
+        return f"ecotaxa/{sample}.zip"
+    else:
+        raiseCytoError(f"Invalid kind '{kind}'", logger)
+    
+
+def list_sample_assets(project: str, kind: str, logger: logging.Logger, ctx=None) -> list:
+    """
+    List all expected asset files for a given sample.
     
     Args:
         project: The project directory path
-        kind: The type of files to retrieve. Can be "json" (from converted/), "cyz" (from raw/), "zip" (from ecotaxa/)
-        sample: Optional sample name to filter by. If provided, only files
-                matching the sample basename will be returned.
-                
+        sample: The sample name (without extension)
+        kind: The type of file/directory to retrieve
+        logger: The logger instance to use for logging
+        ctx: The Click context object, used to get the sample name when called from a command with a --sample option
+    
     Returns:
-        A list of Path objects for files found. If no files are found,
-        returns an empty list.
-        
-    Raises:
-        ValueError: If kind is not "json", "cyz", or "zip"
-        
-    Examples:
-        >>> files = get_sample_files('/path/to/project', kind='json')
-        >>> files = get_sample_files('/path/to/project', kind='cyz', sample='my_sample')
-        >>> files = get_sample_files('/path/to/project', kind='zip', sample='my_sample')
+        A list of Path objects for the expected files/directories    
     """
-    
-    # TODO regroup all files in work, to clean up the project structure and avoid having to look in different directories for different file types.
-
     # Determine directory and extension based on kind
-    if kind == "json":
-        target_dir = Path(project) / "converted"
-        command = "convert"
-    elif kind == "cyz":
-        target_dir = Path(project) / "raw"
+    if kind == "cyz":
         command= "create"
-    elif kind == "zip":
-        target_dir = Path(project) / "ecotaxa"
-        command = "prepare"
     else:
-        raiseCytoError(f"kind must be 'json', 'cyz', or 'zip', got '{kind}'", logger)
-        
-    if not target_dir.exists():
-        raiseCytoError(f"Directory for {kind} files not found: '{target_dir}' ; run `cytoprocess {command} {project}` command first", logger)   
+        raiseCytoError(f"Invalid kind '{kind}'", logger)
     
-    # List all files of the specified kind
-    logger.debug(f"Listing .{kind} files in '{target_dir}'")
-    files = sorted(list(target_dir.glob("*."+kind)))
-    if len(files) == 0:
-        logger.warning(f"No .{kind} files found in '{target_dir}'")
-        return []
-    logger.debug(f"Found {len(files)} .{kind} files in '{target_dir}'")
-    
-    # Filter by sample if specified
+    project = Path(project)
     sample = getattr(ctx, "obj", {}).get("sample")
     if sample:
-        files = [f for f in files if f.stem.replace('ecotaxa_', '') == sample]
-        if len(files) == 0:
-            logger.warning(f"No .{kind} files found for sample '{sample}' in '{target_dir}'")
-        else:
-            logger.debug(f"Found file '{files[0].name}' matching sample '{sample}'")
-    
-    return files
+        asset = project / path_to_sample_asset(sample, kind, logger)
+        if not asset.exists():
+            logger.warning(f"No {kind} file found for sample '{sample}'\nRun `cytoprocess --sample '{sample}' {command} '{project}'`")
+            return []
+        logger.debug(f"Found {kind} file for sample '{sample}': '{asset}'")
+        return [asset]
+    else:
+        assets = sorted(list(project.glob(path_to_sample_asset("*", kind, logger))))
+        if len(assets) == 0:
+            logger.warning(f"No {kind} files found in '{project}'\nRun `cytoprocess {command} '{project}'`")
+            return []
+        logger.debug(f"Found {len(assets)} {kind} files in '{project}'")
+        return assets
 
 
 def raiseCytoError(message: str, logger: logging.Logger = None):

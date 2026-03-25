@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
 from pathlib import Path
-from cytoprocess.utils import ensure_project_dir, get_sample_files, setup_logging, log_command_start, log_command_success
+from cytoprocess.utils import ensure_project_dir, list_sample_assets, setup_logging, log_command_start, log_command_success
 
 
 DEFAULT_EXTRA_FIELDS = "object_lon,object_lat,object_date,object_time,object_depth_min,object_depth_max,object_lon_end,object_lat_end"
@@ -13,6 +13,23 @@ def run(ctx, project, extra_fields=DEFAULT_EXTRA_FIELDS):
     log_command_start(logger, "Listing samples", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
 
+    # List raw files
+    raw_files = list_sample_assets(project, kind='cyz', logger=logger, ctx=ctx)
+
+
+    # If there are none, warn and exit
+    if (len(raw_files) == 0):
+        logger.warning(f"Then copy/move cyz files to '{project}/raw'")
+        return
+
+
+    # If there are some, print them to the console
+    logger.info(f"{len(raw_files)} sample(s) found")
+    for file in raw_files:
+        print(f"   {file.stem}")
+
+
+    # And write them to the metadata file
     # Parse extra fields
     if extra_fields:
         extra_field_list = [f.strip() for f in extra_fields.split(',') if f.strip()]
@@ -24,9 +41,6 @@ def run(ctx, project, extra_fields=DEFAULT_EXTRA_FIELDS):
     meta_dir = ensure_project_dir(project, "meta")
     meta_file = meta_dir / "samples.csv"
     
-    # List raw files
-    raw_files = get_sample_files(project, logger, kind='cyz', ctx=ctx)
-    
     # Create 'samples' DataFrame
     samples = pd.DataFrame({
         'sample_id': [f.stem for f in raw_files]
@@ -34,11 +48,6 @@ def run(ctx, project, extra_fields=DEFAULT_EXTRA_FIELDS):
     for field in extra_field_list:
         samples[field] = None
     
-    # Print sample IDs to console
-    logger.info(f"{len(samples)} samples found")
-    for sample_id in samples['sample_id']:
-        print(f"   {sample_id}")
-
     # Read existing metadata if it exists, otherwise create new
     update_meta_file = True
     if meta_file.exists():
