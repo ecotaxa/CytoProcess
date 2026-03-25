@@ -43,15 +43,17 @@ def run(ctx, project, force=False):
 
     # Convert each .cyz file
     for cyz_file in cyz_files:
-        json_path = path_to_sample_asset(cyz_file.stem, 'json', logger)
+        sample_id = cyz_file.stem
+        logger.info(f"'{sample_id}'")
+        json_path = path_to_sample_asset(sample_id, 'json', logger)
         json_file = project / json_path
         
         # Skip if JSON file already exists and force is not enabled
         if json_file.exists() and not force:
-            logger.info(f"Skipping\n  '{cyz_file.name}'\n  json file already exists (use --force to overwrite)")
+            logger.info(f"  Skipping, output file already exists (use --force to overwrite)")
             continue
         
-        logger.info(f"Converting\n  'raw/{cyz_file.name}' →\n  '{json_path}'")
+        logger.info(f"  Converting to '{json_path}'")
         
         try:
             # Create sample directory if it doesn't exist
