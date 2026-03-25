@@ -1,24 +1,21 @@
-import logging
 import subprocess
 from pathlib import Path
-from cytoprocess.utils import get_sample_files, ensure_project_dir, log_command_success, setup_logging, log_command_start, raiseCytoError
+from cytoprocess.utils import list_sample_assets, path_to_sample_asset, log_command_success, setup_logging, log_command_start, raiseCytoError
 from cytoprocess.commands import install
 
 
 def run(ctx, project, force=False):
+    # Housekeeping for the command
     logger = setup_logging(command="convert", project=project, debug=ctx.obj["debug"])
-
+    
+    project = Path(project)
     log_command_start(logger, "Converting .cyz files", project)
     
     if force:
         logger.debug("Force flag enabled: existing .json files will be overwritten")
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
-    
-    # Get .cyz files from raw directory
-    cyz_files = get_sample_files(project, logger, kind="cyz", ctx=ctx)
-    if (not cyz_files):
-        return
-    
+
+
     # Get the path to Cyz2Json binary
     logger.debug("Getting path to Cyz2Json binary")
     try:
@@ -26,6 +23,7 @@ def run(ctx, project, force=False):
     except Exception as e:
         raiseCytoError(f"Failed to get Cyz2Json binary: {e}", logger)
     
+
     # Detect possible set_definition.xml that overrides the default one included in .cyz file
     set_definition_path = Path(project) / "config" / "set_definition.xml"
     if set_definition_path.exists():
@@ -35,21 +33,30 @@ def run(ctx, project, force=False):
         logger.info(f"Using imaging set definitions from the .cyz file,\n  override with 'config/set_definition.xml' if needed")
         set_definition_command = []
 
-    # Create processed directory if it doesn't exist
-    converted_dir = ensure_project_dir(project, "converted")
+
+    # Get .cyz files from raw directory
+    cyz_files = list_sample_assets(project, kind="cyz", logger=logger, ctx=ctx)
+    if not cyz_files:
+        logger.warning(f"Then copy/move cyz files to '{project}/raw'")
+        return
+ 
 
     # Convert each .cyz file
     for cyz_file in cyz_files:
-        json_file = converted_dir / (cyz_file.stem + ".json")
+        json_path = path_to_sample_asset(cyz_file.stem, 'json', logger)
+        json_file = project / json_path
         
         # Skip if JSON file already exists and force is not enabled
         if json_file.exists() and not force:
             logger.info(f"Skipping\n  '{cyz_file.name}'\n  json file already exists (use --force to overwrite)")
             continue
         
-        logger.info(f"Converting\n  'raw/{cyz_file.name}' →\n  'converted/{json_file.name}'")
+        logger.info(f"Converting\n  'raw/{cyz_file.name}' →\n  '{json_path}'")
         
         try:
+            # Create sample directory if it doesn't exist
+            json_file.parents[0].mkdir(parents=True, exist_ok=True)
+            
             # Build and log the command
             command = [cyz2json_path, str(cyz_file), "--raw", "--imaging-set-information", "--image-processing", "--image-processing-margin-percentage 0"]
             command.extend(set_definition_command)
