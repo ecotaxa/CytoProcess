@@ -57,7 +57,7 @@ def run(ctx, project, force=False):
         
         try:
             # Create sample directory if it doesn't exist
-            json_file.parents[0].mkdir(parents=True, exist_ok=True)
+            json_file.parent.mkdir(parents=True, exist_ok=True)
             
             # Build and log the command
             command = [cyz2json_path, str(cyz_file), "--raw", "--imaging-set-information", "--image-processing", "--image-processing-margin-percentage 0"]
