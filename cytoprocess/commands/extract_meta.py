@@ -1,9 +1,7 @@
-import logging
 import ijson
-import yaml
 import pandas as pd
 from pathlib import Path
-from cytoprocess.utils import get_sample_files, ensure_project_dir, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.utils import list_sample_assets, get_json_section, load_config, path_to_sample_asset, setup_logging, log_command_start, log_command_success, raiseCytoError
 
 
 def _get_json_structure(json_data, prefix=""):
@@ -126,14 +124,15 @@ def _get_json_item(json_data, path):
     return current if current is not None else None
 
 
-def run(ctx, project, list_keys=False):
+def run(ctx, project, list_keys=False, force=False):
     logger = setup_logging(command="extract_meta", project=project, debug=ctx.obj["debug"])
 
     log_command_start(logger, "Extracting metadata", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
+    project = Path(project)
         
     # Get JSON files from converted directory
-    json_files = get_sample_files(project, logger, kind="json", ctx=ctx)
+    json_files = list_sample_assets(project, kind="json", logger=logger, ctx=ctx)
     if not json_files:
         return
         
@@ -166,10 +165,9 @@ def run(ctx, project, list_keys=False):
         if len(json_files) > 1:
             logger.info(f"Found {len(keys)} unique metadata items across all .json files")
 
-        # Make sure config directory exists
-        meta_dir = ensure_project_dir(project, "meta")
-
         # Write keys to file
+        meta_dir = project / "meta"
+        meta_dir.mkdir(parents=True, exist_ok=True)
         keys_file = meta_dir / "available_metadata_fields.txt"
         with open(keys_file, 'w') as f:
             for key_path in sorted(keys):
@@ -182,21 +180,30 @@ def run(ctx, project, list_keys=False):
         config = load_config(project, logger)
                 
         for json_file in json_files:
+            # Get sample_id from file name
+            sample_id = json_file.parents[0].name
+            output_file = project / path_to_sample_asset(sample_id, 'metadata', logger)
+
+            logger.info(f"'{sample_id}'")
+           
+            # Skip if output file exists and force is not set
+            if output_file.exists() and not force:
+                logger.info(f"  Skipping, output file already exists (use --force to overwrite)")
+                continue
+
             try:
-                logger.debug(f"Extracting metadata from '{json_file.name}'")
+                logger.debug(f"Extracting metadata for '{sample_id}'")
 
                 # Load the instrument section of the json file
                 instrument_data = get_json_section(json_file, 'instrument', logger)
 
-                # If it is found, extract all the metadata keys it contains
                 if instrument_data is None:
+                    logger.warning(f"No 'instrument' section found in '{json_file.name}', skipping metadata extraction for this file")
                     continue
 
-                # Create a row for this file
-                row = {}
+                # Initialise metadata dictionary with sample_id
+                meta = {'sample_id': sample_id}
                 
-                # Define the sample_id to join this with the rest of the data
-                row['sample_id'] = json_file.stem
                 # Process each section (sample, acq, process)
                 for section_name in ['sample', 'acq', 'process']:
                     section_keys = config.get(section_name)
@@ -216,14 +223,13 @@ def run(ctx, project, list_keys=False):
                         if value is None:
                             logger.debug(f"Key '{json_path}' not found in {json_file.name}")
                         else:
-                            row[full_column_name] = value
+                            meta[full_column_name] = value
 
                     # Force the inclusion of pixel size because we need it later
                     # (to draw the scale bar on images)
-                    row["__pixel_size__"] = _get_json_item(instrument_data, 'measurementSettings.CytoSettings.CytoSettings.iif.ImageScaleMuPerPixelP')
+                    meta["__pixel_size__"] = _get_json_item(instrument_data, 'measurementSettings.CytoSettings.CytoSettings.iif.ImageScaleMuPerPixelP')
                 
-                metadata_rows.append(row)
-                logger.info(f"Extracted {len(row)-2} metadata fields from '{json_file.name}'")
+                logger.info(f"  Extracted {len(meta)-2} metadata fields")
                 # NB: -2 to exclude the sample_id and __pixel_size__ fields
                 
             except ijson.JSONError as e:
@@ -231,35 +237,7 @@ def run(ctx, project, list_keys=False):
             except Exception as e:
                 raiseCytoError(f"Error processing '{json_file.name}': {e}", logger)
         
-        # Save to paquet in work directory
-        work_dir = ensure_project_dir(project, "work")
-        output_file = work_dir / "sample_metadata_from_instrument.parquet"
-        logger.info(f"Saving metadata to '{output_file}'")
-        
-        # Create DataFrame from newly extracted metadata
-        new_df = pd.DataFrame(metadata_rows)
-
-        # Check if the parquet file already exists
-        if output_file.exists():
-            # TODO consider requiring --force here like in other commands
-            logger.debug(f"Metadata file exists, updating rows")
-            existing_df = pd.read_parquet(output_file)
-            
-            # Remove rows from existing_df that have the same sample_id as in new_df
-            existing_df = existing_df[~existing_df['sample_id'].isin(new_df['sample_id'])]
-
-            logger.debug(f"Updating/appending {len(new_df)} row(s)")
-            df = pd.concat([existing_df, new_df], ignore_index=True)
-
-        else:
-            logger.debug(f"Creating new metadata file")
-            df = new_df
-        
-        # Sort by sample_id, for consistency
-        df = df.sort_values('sample_id').reset_index(drop=True)
-
-        df.to_parquet(output_file, index=False)
-        logger.debug(f"Metadata shape: {df.shape[0]} rows × {df.shape[1]} columns")
+            logger.info(f"  Saving to '{output_file}'")
+            pd.DataFrame([meta]).to_parquet(output_file, index=False)
 
     log_command_success(logger, "Extract metadata")
-

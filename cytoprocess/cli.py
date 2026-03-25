@@ -73,11 +73,12 @@ def convert(ctx, project, force):
 @cli.command(name="extract_meta")
 @click.argument("project")
 @click.option("--list", "list_keys", is_flag=True, default=False, help="List all metadata items found in the .json file(s) instead of extracting some of them")
+@click.option("--force", is_flag=True, default=False, help="Force extraction even if output files already exist")
 @click.pass_context
-def extract_meta(ctx, project, list_keys):
+def extract_meta(ctx, project, list_keys, force):
     """Extract sample metadata from .json files."""
     from cytoprocess.commands import extract_meta
-    extract_meta.run(ctx, project=project, list_keys=list_keys)
+    extract_meta.run(ctx, project=project, list_keys=list_keys, force=force)
 
 
 @cli.command(name="extract_cyto")
