@@ -147,12 +147,11 @@ def _process_single_particle(args):
 def run(ctx, project, n_poly=10, force=False, max_cores=None):
     # Housekeeping for the command
     logger = setup_logging(command="summarise_pulses", project=project, debug=ctx.obj["debug"])
-
     log_command_start(logger, "Summarising pulse shapes", project)
+    if force:
+        logger.debug("Force flag enabled: existing pulses summaries and plots will be overwritten")
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
     logger.debug(f"Using {n_poly} polynomial coefficients")
-
-    project = Path(project)
     
     # Determine number of cores to use
     available_cores = os.cpu_count() or 1
@@ -161,11 +160,11 @@ def run(ctx, project, n_poly=10, force=False, max_cores=None):
         n_cores = min(n_cores, max_cores)
     logger.debug(f"Using {n_cores} core(s) for parallel processing")
 
+
     # Get JSON files from converted directory
     json_files = list_sample_assets(project, kind="json", logger=logger, ctx=ctx)
     if not json_files:
-        return
-    
+        return    
     logger.info(f"Processing {len(json_files)} .json file(s)")
     
     # Ensure output directories exist

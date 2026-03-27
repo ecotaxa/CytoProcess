@@ -358,11 +358,9 @@ def monitor_job(logger: logging.Logger, token: str, job_id: int, poll_interval: 
 
 def run(ctx, project, username: str | None = None, password: str | None = None):
     logger = setup_logging(command="upload", project=project, debug=ctx.obj["debug"])
-
     log_command_start(logger, "Uploading samples to EcoTaxa", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
     
-    project = Path(project)
     # TODO abstract cheching the existence of the prpoject and of some files in it in a function; have it raise a FileNotFound error and handle it with try:except in cli.py
 
     # Load config from project

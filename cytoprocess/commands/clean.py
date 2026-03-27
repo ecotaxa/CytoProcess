@@ -29,8 +29,8 @@ def _remove_directory(directory: Path, logger: logging.Logger) -> bool:
 
 
 def run(ctx, project):
+    # Housekeeping for the command
     logger = setup_logging(command="cleanup", project=project, debug=ctx.obj["debug"])
-
     log_command_start(logger, "Cleaning up intermediate files", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
     

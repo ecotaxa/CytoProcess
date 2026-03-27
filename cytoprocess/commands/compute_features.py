@@ -133,11 +133,13 @@ def _process_single_image(args):
 
 
 def run(ctx, project, force=False, max_cores=None):
+    # Housekeeping for the command
     logger = setup_logging(command="compute_features", project=project, debug=ctx.obj["debug"])
-
     log_command_start(logger, "Computing image features", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
-    
+    if force:
+        logger.debug("Force flag enabled, existing image features will be overwritten")
+   
     # Determine number of cores to use
     available_cores = os.cpu_count() or 1
     n_cores = max(1, available_cores - 1)

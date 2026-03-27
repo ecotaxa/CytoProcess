@@ -447,15 +447,16 @@ def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path, pulses
 
 
 def run(ctx, project, force=False, only_tsv=False, max_cores=None):
-    """Prepare EcoTaxa TSV/ZIP files for samples."""
+    # Housekeeping for the command
     logger = setup_logging(command="prepare", project=project, debug=ctx.obj["debug"])
-    
     log_command_start(logger, "Preparing EcoTaxa files", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
+    if force:
+        logger.debug("Force flag enabled, existing ecotaxa files will be overwritten")
     if only_tsv:
-        logger.debug("Only creating TSV files (--only-tsv flag enabled)")
+        logger.debug("only-tsv flag enabled: only creating TSV files, not ZIP files with images")
 
-    project = Path(project)
+
     work_dir = project / "work"
     sample_filter = getattr(ctx, "obj", {}).get("sample")
 

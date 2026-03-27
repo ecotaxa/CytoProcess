@@ -5,11 +5,12 @@ from cytoprocess.utils import ensure_project_dir, setup_logging, log_command_sta
 
 
 def run(ctx, project):
+    # Housekeeping for the command
     logger = setup_logging(command="create", project=project, debug=ctx.obj["debug"])
-
     log_command_start(logger, "Creating project", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
     
+
     # Create the main directory if it doesn't exist
     if (Path(project).exists()):
         logger.info(f"Project directory '{project}' already exists,\nChecking its contents...")

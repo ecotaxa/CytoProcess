@@ -89,18 +89,16 @@ def _get_parameter_value(parameters, path):
 def run(ctx, project, list_keys=False, force=False):
     # Housekeeping for the command
     logger = setup_logging(command="extract_cyto", project=project, debug=ctx.obj["debug"])
-
     log_command_start(logger, "Extracting cytometric features", project)
+    if force:
+       logger.debug("Force flag enabled: existing cytometric features files will be overwritten")
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
-    
-    project = Path(project)
 
 
     # Get JSON files one converted
     json_files = list_sample_assets(project, kind="json", logger=logger, ctx=ctx)
     if not json_files:
         return
-        
     logger.info(f"Processing {len(json_files)} .json file(s)")
     
     if list_keys:

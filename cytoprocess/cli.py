@@ -47,7 +47,7 @@ def install(ctx, force):
 def create(ctx, project):
     """Create a new CytoProcess project directory."""
     from cytoprocess.commands import create
-    create.run(ctx, project=project)
+    create.run(ctx, project=Path(project))
 
 
 @cli.command(name="list")
@@ -57,7 +57,7 @@ def create(ctx, project):
 def list_samples(ctx, project, extra_fields):
     """List samples and create/update samples.csv."""
     from cytoprocess.commands import list as list_cmd
-    list_cmd.run(ctx, project=project, extra_fields=extra_fields)
+    list_cmd.run(ctx, project=Path(project), extra_fields=extra_fields)
 
 
 @cli.command(name="convert")
@@ -67,7 +67,7 @@ def list_samples(ctx, project, extra_fields):
 def convert(ctx, project, force):
     """Convert .cyz files to .json format."""
     from cytoprocess.commands import convert
-    convert.run(ctx, project=project, force=force)
+    convert.run(ctx, project=Path(project), force=force)
 
 
 @cli.command(name="extract_meta")
@@ -78,7 +78,7 @@ def convert(ctx, project, force):
 def extract_meta(ctx, project, list_keys, force):
     """Extract sample metadata from .json files."""
     from cytoprocess.commands import extract_meta
-    extract_meta.run(ctx, project=project, list_keys=list_keys, force=force)
+    extract_meta.run(ctx, project=Path(project), list_keys=list_keys, force=force)
 
 
 @cli.command(name="extract_cyto")
@@ -89,7 +89,7 @@ def extract_meta(ctx, project, list_keys, force):
 def extract_cyto(ctx, project, list_keys, force):
     """Extract cytometric features from .json files."""
     from cytoprocess.commands import extract_cyto
-    extract_cyto.run(ctx, project=project, list_keys=list_keys, force=force)
+    extract_cyto.run(ctx, project=Path(project), list_keys=list_keys, force=force)
 
 
 @cli.command(name="summarise_pulses")
@@ -101,7 +101,7 @@ def extract_cyto(ctx, project, list_keys, force):
 def summarise_pulses(ctx, project, n_poly, force, max_cores):
     """Summarise pulse shapes."""
     from cytoprocess.commands import summarise_pulses
-    summarise_pulses.run(ctx, project=project, n_poly=n_poly, force=force, max_cores=max_cores)
+    summarise_pulses.run(ctx, project=Path(project), n_poly=n_poly, force=force, max_cores=max_cores)
 
 
 @cli.command(name="extract_images")
@@ -111,7 +111,7 @@ def summarise_pulses(ctx, project, n_poly, force, max_cores):
 def extract_images(ctx, project, force):
     """Extract images from .json files."""
     from cytoprocess.commands import extract_images
-    extract_images.run(ctx, project, force=force)
+    extract_images.run(ctx, project=Path(project), force=force)
 
 
 @cli.command(name="compute_features")
@@ -122,7 +122,7 @@ def extract_images(ctx, project, force):
 def compute_features(ctx, project, force, max_cores):
     """Compute features from extracted images."""
     from cytoprocess.commands import compute_features
-    compute_features.run(ctx, project=project, force=force, max_cores=max_cores)
+    compute_features.run(ctx, project=Path(project), force=force, max_cores=max_cores)
 
 
 @cli.command(name="prepare")
@@ -134,7 +134,7 @@ def compute_features(ctx, project, force, max_cores):
 def prepare(ctx, project, force, only_tsv, max_cores):
     """Prepare .tsv and images for EcoTaxa."""
     from cytoprocess.commands import prepare
-    prepare.run(ctx, project, force=force, only_tsv=only_tsv, max_cores=max_cores)
+    prepare.run(ctx, project=Path(project), force=force, only_tsv=only_tsv, max_cores=max_cores)
 
 
 @cli.command(name="upload")
@@ -145,7 +145,7 @@ def prepare(ctx, project, force, only_tsv, max_cores):
 def upload(ctx, project, username, password):
     """Upload files to EcoTaxa. """
     from cytoprocess.commands import upload
-    upload.run(ctx, project, username=username, password=password)
+    upload.run(ctx, project=Path(project), username=username, password=password)
 
 
 @cli.command(name="all")
@@ -170,21 +170,21 @@ def all(ctx, project, force, n_poly, max_cores):
     logger = setup_logging(command="all", project=project, debug=ctx.obj["debug"])
     logger.info(f"Running all processing steps for project: {project}")
     
-    convert.run(ctx, project=project, force=force)
+    convert.run(ctx, project=Path(project), force=force)
     
-    extract_meta.run(ctx, project=project, list_keys=False)
+    extract_meta.run(ctx, project=Path(project), list_keys=False)
 
-    extract_cyto.run(ctx, project=project, list_keys=False, force=force)
+    extract_cyto.run(ctx, project=Path(project), list_keys=False, force=force)
     
-    summarise_pulses.run(ctx, project=project, force=force, n_poly=n_poly, max_cores=max_cores)
+    summarise_pulses.run(ctx, project=Path(project), force=force, n_poly=n_poly, max_cores=max_cores)
 
-    extract_images.run(ctx, project=project, force=force)
+    extract_images.run(ctx, project=Path(project), force=force)
     
-    compute_features.run(ctx, project=project, force=force, max_cores=max_cores)
+    compute_features.run(ctx, project=Path(project), force=force, max_cores=max_cores)
     
-    prepare.run(ctx, project=project, force=force, max_cores=max_cores)
+    prepare.run(ctx, project=Path(project), force=force, max_cores=max_cores)
     
-    upload.run(ctx, project=project)
+    upload.run(ctx, project=Path(project))
     
     logger.info("All processing steps completed successfully")
 
@@ -195,7 +195,7 @@ def all(ctx, project, force, n_poly, max_cores):
 def clean(ctx, project):
     """Remove intermediate files in the project."""
     from cytoprocess.commands import clean
-    clean.run(ctx, project=project)
+    clean.run(ctx, project=Path(project))
 
 
 def main(argv=None):

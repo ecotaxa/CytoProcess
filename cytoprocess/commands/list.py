@@ -7,10 +7,11 @@ DEFAULT_EXTRA_FIELDS = "object_lon,object_lat,object_date,object_time,object_dep
 
 
 def run(ctx, project, extra_fields=DEFAULT_EXTRA_FIELDS):
+    # Housekeeping for the command
     logger = setup_logging(command="list", project=project, debug=ctx.obj["debug"])
-
     log_command_start(logger, "Listing samples", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
+
 
     # List raw files
     raw_files = list_sample_assets(project, kind='cyz', logger=logger, ctx=ctx)

@@ -125,17 +125,18 @@ def _get_json_item(json_data, path):
 
 
 def run(ctx, project, list_keys=False, force=False):
+    # Housekeeping for the command
     logger = setup_logging(command="extract_meta", project=project, debug=ctx.obj["debug"])
-
     log_command_start(logger, "Extracting metadata", project)
+    if force:
+        logger.debug("Force flag enabled: existing metadata files will be overwritten")
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
-    project = Path(project)
-        
+
+
     # Get JSON files from converted directory
     json_files = list_sample_assets(project, kind="json", logger=logger, ctx=ctx)
     if not json_files:
-        return
-        
+        return     
     logger.info(f"Processing {len(json_files)} .json file(s)")
         
     if list_keys:

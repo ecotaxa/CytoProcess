@@ -1,4 +1,3 @@
-import logging
 import base64
 import shutil
 from pathlib import Path
@@ -6,19 +5,18 @@ from cytoprocess.utils import get_sample_files, ensure_project_dir, get_json_sec
 
 
 def run(ctx, project, force=False):
+    # Housekeeping for the command
     logger = setup_logging(command="extract_images", project=project, debug=ctx.obj["debug"])
-
     log_command_start(logger, "Extracting images", project)
-    
+    logger.debug("Context: %s", getattr(ctx, "obj", {}))
     if force:
         logger.debug("Force flag enabled, existing image directories will be removed and recreated")
-    logger.debug("Context: %s", getattr(ctx, "obj", {}))
-    
+
+
     # Get JSON files from converted directory
     json_files = get_sample_files(project, logger, kind="json", ctx=ctx)
     if not json_files:
-        return
-   
+        return   
     logger.info(f"Processing {len(json_files)} .json file(s)")
     
     # Process each JSON file

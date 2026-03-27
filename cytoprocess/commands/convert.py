@@ -7,10 +7,7 @@ from cytoprocess.commands import install
 def run(ctx, project, force=False):
     # Housekeeping for the command
     logger = setup_logging(command="convert", project=project, debug=ctx.obj["debug"])
-    
-    project = Path(project)
     log_command_start(logger, "Converting .cyz files", project)
-    
     if force:
         logger.debug("Force flag enabled: existing .json files will be overwritten")
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
