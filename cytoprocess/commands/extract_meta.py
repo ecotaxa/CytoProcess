@@ -178,6 +178,10 @@ def run(ctx, project, list_keys=False, force=False):
     else:
         # Otherwise, in normal operations, extract specific metadata items based on config.yaml
         config = load_config(project, logger)
+
+        # Ensure work directory exists to store the output
+        work_dir = project / "work"
+        work_dir.mkdir(parents=True, exist_ok=True)
                 
         for json_file in json_files:
             # Get sample_id from file name
