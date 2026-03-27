@@ -1,7 +1,6 @@
-import yaml
-import pandas as pd
 from pathlib import Path
-from cytoprocess.utils import get_sample_files, ensure_project_dir, get_json_section, load_config, setup_logging, log_command_start, log_command_success, raiseCytoError
+import pandas as pd
+from cytoprocess.utils import list_sample_assets, path_to_sample_asset, get_json_section, load_config, setup_logging, log_command_start, log_command_success, raiseCytoError
 import ijson
 import numpy as np
 
@@ -88,16 +87,20 @@ def _get_parameter_value(parameters, path):
 
 
 def run(ctx, project, list_keys=False, force=False):
+    # Housekeeping for the command
     logger = setup_logging(command="extract_cyto", project=project, debug=ctx.obj["debug"])
 
     log_command_start(logger, "Extracting cytometric features", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
     
-    # Get JSON files from converted directory
-    json_files = get_sample_files(project, logger, kind="json", ctx=ctx)
+    project = Path(project)
+
+
+    # Get JSON files one converted
+    json_files = list_sample_assets(project, kind="json", logger=logger, ctx=ctx)
     if not json_files:
         return
-    
+        
     logger.info(f"Processing {len(json_files)} .json file(s)")
     
     if list_keys:
@@ -136,8 +139,9 @@ def run(ctx, project, list_keys=False, force=False):
         logger.info(f"Found {len(paths)} parameter paths")
         
         # Write paths to file
-        meta_dir = ensure_project_dir(project, "meta")
-        paths_file = meta_dir / "available_cytometry_features.txt"
+        meta_dir = project / "meta"
+        meta_dir.mkdir(parents=True, exist_ok=True)
+        paths_file = meta_dir / "available_cytometric_features.txt"
         with open(paths_file, 'w') as f:
             for path in paths:
                 f.write(f"{path}\n")
@@ -156,14 +160,16 @@ def run(ctx, project, list_keys=False, force=False):
         logger.debug(f"Found {len(object_config)} mappings in 'object' section")
         
         # Ensure work directory exists, to store output files
-        work_dir = ensure_project_dir(project, "work")
+        work_dir = project / "work"
+        work_dir.mkdir(parents=True, exist_ok=True)
         
         # Process each JSON file and write one Parquet per sample
         for json_file in json_files:
-            sample_id = json_file.stem
-            output_file = work_dir / f"{sample_id}_cytometric_features.parquet"
+            # Get sample_id from file name
+            sample_id = json_file.parents[0].name
+            output_file = project / path_to_sample_asset(sample_id, 'cytometric_features', logger)
 
-            logger.info(f"'{json_file.stem}'")
+            logger.info(f"'{sample_id}'")
            
             # Skip if output file exists and force is not set
             if output_file.exists() and not force:
