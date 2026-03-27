@@ -4,7 +4,6 @@ import os
 from multiprocessing import Pool
 import numpy as np
 from pathlib import Path
-import imageio as iio
 from cytoprocess.utils import ensure_project_dir, setup_logging, log_command_start, log_command_success, raiseCytoError
 
 
@@ -23,118 +22,6 @@ def _infer_ecotaxa_type(series):
         return '[f]'
     else:
         return '[t]'
-
-
-def _add_scale_bar(input_path: Path, output_path: Path, pixel_size: float):
-    """
-    Add a scale bar at the bottom of the image
-    
-    Args:
-        input_path: Path to the source JPG file
-        output_path: Path to write the processed JPG file
-        pixel_size: Size of one pixel in um
-    """
-
-    # Define a custom minimal 'font' for scale bar text
-    f1 = np.asarray(
-        [[1,1,0,1],
-         [1,0,0,1],
-         [1,1,0,1],
-         [1,1,0,1],
-         [1,1,0,1],
-         [1,1,0,1],
-         [1,1,0,1],
-         [1,1,1,1],
-         [1,1,1,1]])
-    f0 = np.asarray(
-        [[1,1,0,0,1,1],
-         [1,0,1,1,0,1],
-         [1,0,1,1,0,1],
-         [1,0,1,1,0,1],
-         [1,0,1,1,0,1],
-         [1,0,1,1,0,1],
-         [1,1,0,0,1,1],
-         [1,1,1,1,1,1],
-         [1,1,1,1,1,1]])
-    fu = np.asarray(
-        [[1,1,1,1,1,1],
-         [1,1,1,1,1,1],
-         [1,1,1,1,1,1],
-         [1,0,1,1,0,1],
-         [1,0,1,1,0,1],
-         [1,0,1,1,0,1],
-         [1,0,0,0,1,1],
-         [1,0,1,1,1,1],
-         [1,0,1,1,1,1]])
-    fm = np.asarray(
-        [[1,1,1,1,1,1],
-         [1,1,1,1,1,1],
-         [1,1,1,1,1,1],
-         [0,0,1,0,1,1],
-         [0,1,0,1,0,1],
-         [0,1,0,1,0,1],
-         [0,1,0,1,0,1],
-         [1,1,1,1,1,1],
-         [1,1,1,1,1,1]])
-    
-    # Define scale bar sizes and corresponding text
-    breaks_um = np.array([1, 10, 100])
-    t1um  = np.concatenate((f1, fu, fm), axis=1)
-    t10um = np.concatenate((f1, f0, fu, fm), axis=1)
-    t100um = np.concatenate((f1, f0, f0, fu, fm), axis=1)
-    breaks_text = [t1um, t10um, t100um]
-    
-    # Read the grayscale image
-    img = iio.imread(input_path)
-    img_width_px = img.shape[1]
-    
-    # Define how large the scale bar is for each physical size
-    breaks_px = np.round(breaks_um / pixel_size)
-
-    # Start the scale bar at these many pixels from the bottom left corner
-    pad = 5
-
-    # Find the most appropriate scale bar size given the width of the object
-    break_idx = int(np.interp(img_width_px-pad, breaks_px, range(len(breaks_px))))
-    
-    # Pick the actual size and text we need for this size
-    bar_width_px = int(breaks_px[break_idx])
-    bar_text = breaks_text[break_idx]
-    text_height_px,text_width_px = bar_text.shape
-
-    # Define the width and height of the scale bar area
-    w = max(img_width_px, bar_width_px+pad, text_width_px+pad)
-    h = 31
-    # NB: 31px matches ZooProcess
-    
-    # Define the scale bar area background colour as the median of the top row of the image
-    backgd_clr = np.median(img[0,:]) 
-
-    # Pad the input image on the right if it is not wide enough
-    if w > img_width_px:
-        padding_width = w - img_width_px
-        img = np.pad(img, ((0, 0), (0, padding_width)), constant_values=backgd_clr)
-    
-    # Draw a blank scale bar area
-    scale = np.full((h, w), backgd_clr, dtype=img.dtype)
-    # Add the scale bar (black)
-    scale[h-pad-2:h-pad, pad:(bar_width_px+pad)] = 0
-    # Add the text (convert [0,1] to [0,backgd_clr])
-    scale[h-pad-4-text_height_px:h-pad-4, pad:(text_width_px+pad)] = (bar_text * backgd_clr).astype(img.dtype)
-    
-    # Combine with the image
-    img = np.concatenate((img, scale), axis=0)
-        
-    # Write the processed image
-    iio.imsave(output_path, img, quality=98)
-
-    return output_path
-
-
-def _add_scale_bar_multiprocessing(args):
-    """Wrapper for multiprocessing, with arguments as a single tuple."""
-    image_file, processed_path, pixel_size = args
-    return _add_scale_bar(image_file, processed_path, pixel_size)
 
 
 def _list_samples(project: Path, sample_filter: str | None, logger) -> tuple[pd.DataFrame, list[str]]:
@@ -416,9 +303,9 @@ def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path, pulses
     logger.debug(f"Using {n_cores} core(s) for parallel processing")
     # TODO wrap this into a function and reuse it everywhere we do parallel processing
 
-    args = [(image_file, ecotaxa_dir / image_file.name, pixel_size) for image_file in image_files]
-    with Pool(processes=n_cores) as pool:
-        processed_images = pool.map(_add_scale_bar_multiprocessing, args)
+    # args = [(image_file, ecotaxa_dir / image_file.name, pixel_size) for image_file in image_files]
+    # with Pool(processes=n_cores) as pool:
+    #     processed_images = pool.map(_add_scale_bar_multiprocessing, args)
 
     logger.debug(f"Creating zip file '{zip_file}'")
     with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
