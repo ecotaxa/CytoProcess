@@ -1,7 +1,9 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
-from cytoprocess.utils import get_sample_files, ensure_project_dir, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.utils import list_sample_assets, path_to_sample_asset, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
 import imageio as iio
 import os
 from multiprocessing import Pool
@@ -87,7 +89,7 @@ def _process_single_particle(args):
 
         # Prepare storage for the normalised pulses and its plot
         pulses = {}
-        ensure_project_dir(pulses_img_dir, "")
+        pulses_img_dir.mkdir(parents=True, exist_ok=True)
         # Process each pulse shape (one per channel)
         for pulse_shape in pulse_shapes:
             description = pulse_shape.get('description')
@@ -143,11 +145,14 @@ def _process_single_particle(args):
 
 
 def run(ctx, project, n_poly=10, force=False, max_cores=None):
+    # Housekeeping for the command
     logger = setup_logging(command="summarise_pulses", project=project, debug=ctx.obj["debug"])
 
     log_command_start(logger, "Summarising pulse shapes", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
     logger.debug(f"Using {n_poly} polynomial coefficients")
+
+    project = Path(project)
     
     # Determine number of cores to use
     available_cores = os.cpu_count() or 1
@@ -157,26 +162,28 @@ def run(ctx, project, n_poly=10, force=False, max_cores=None):
     logger.debug(f"Using {n_cores} core(s) for parallel processing")
 
     # Get JSON files from converted directory
-    json_files = get_sample_files(project, logger, kind="json", ctx=ctx)
+    json_files = list_sample_assets(project, kind="json", logger=logger, ctx=ctx)
     if not json_files:
         return
     
     logger.info(f"Processing {len(json_files)} .json file(s)")
     
-    # Ensure work directory exists
-    work_dir = ensure_project_dir(project, "work")
-    pulses_dir = ensure_project_dir(project, "pulses")
+    # Ensure output directories exist
+    work_dir = project / "work"
+    work_dir.mkdir(parents=True, exist_ok=True)
+    pulses_dir = project / "pulses"
+    pulses_dir.mkdir(parents=True, exist_ok=True)
     
     # Process each JSON file and write one Parquet per sample
     for json_file in json_files:
-        sample_id = json_file.stem
-        output_file = work_dir / f"{sample_id}_pulses.parquet"
-        pulses_img_dir = pulses_dir / f"{sample_id}"
+        sample_id = json_file.parents[0].name
+        output_file = project / path_to_sample_asset(sample_id, 'pulses_summaries', logger)
+        pulses_plots_dir = project / path_to_sample_asset(sample_id, 'pulses_plots', logger)
         
-        logger.info(f"'{json_file.stem}'")
+        logger.info(f"'{sample_id}'")
 
         # Skip if output file exists and force is not set
-        if output_file.exists() and pulses_img_dir.exists() and not force:
+        if output_file.exists() and pulses_plots_dir.exists() and not force:
             logger.info(f"  Skipping, outputs already exist (use --force to overwrite)")
             continue
         
@@ -193,7 +200,7 @@ def run(ctx, project, n_poly=10, force=False, max_cores=None):
             logger.debug(f"Found {len(particles_data)} particles in '{json_file.name}'")
             
             # Prepare arguments for parallel processing
-            args_list = [(p, sample_id, n_poly, pulses_img_dir, logger) for p in particles_data]
+            args_list = [(p, sample_id, n_poly, pulses_plots_dir, logger) for p in particles_data]
 
             # Process particles in parallel
             logger.debug("Processing particles for pulse shape extraction")
@@ -212,7 +219,7 @@ def run(ctx, project, n_poly=10, force=False, max_cores=None):
             df = df.sort_values('object_id').reset_index(drop=True)
             df.to_parquet(output_file, index=False)
             
-            logger.info(f"  Saved {df.shape[0]} particles to\n  '{output_file}'\n  and pulse shape images to\n  '{pulses_img_dir}'")
+            logger.info(f"  Saved {df.shape[0]} particles to\n  '{output_file}'\n  and pulse shape images to\n  '{pulses_plots_dir}'")
             
         except Exception as e:
             raiseCytoError(f"Error processing '{json_file.name}': {e}", logger)

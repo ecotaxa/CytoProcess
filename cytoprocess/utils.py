@@ -233,7 +233,7 @@ def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path
         return f"work/{sample}/converted_data.json"
     elif kind == "images" or kind == "pulses_plots":
         return f"work/{sample}/{kind}"
-    elif kind == "metadata" or kind == "pulses" or kind == "image_features" or kind == "cytometric_features":
+    elif kind == "metadata" or kind == "pulses_summaries" or kind == "image_features" or kind == "cytometric_features":
         return f"work/{sample}/{kind}.parquet"
     elif kind == "zip" or kind == "ecotaxa":
         return f"ecotaxa/{sample}.zip"
