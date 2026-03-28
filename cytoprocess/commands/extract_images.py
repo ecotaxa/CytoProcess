@@ -375,7 +375,7 @@ def run(ctx, project, force=False, max_cores=None):
                 background_img = iio.imread(background_data)
                 # For some reason, this is a RGB image,
                 # convert to grayscale by averaging the channels
-                background_img = background_img.mean(axis=2).astype(np.uint8)                    
+                background_img = background_img.mean(axis=2).astype(np.uint8)
             else:
                 logger.warning(f"No background image found in '{json_file.name}', using a uniform grey background instead")
                 background_img = np.ones((1200,1920), dtype=np.uint8) * 150
