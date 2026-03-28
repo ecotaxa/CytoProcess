@@ -414,6 +414,7 @@ def run(ctx, project, force=False):
     for json_file in json_files:
         # Get sample_id from file name
         sample_id = json_file.parents[0].name
+        # and define output paths based on it
         images_dir = project / path_to_sample_asset(sample_id, 'images', logger)
         features_file = project / path_to_sample_asset(sample_id, 'image_features', logger)
 
@@ -425,12 +426,14 @@ def run(ctx, project, force=False):
             # Check if directory already exists
             if images_dir.exists() and features_file.exists():
                 if force:
-                    logger.info(f"  Removing existing directory: '{images_dir}'")
+                    logger.info(f"  Removing existing data")
                     shutil.rmtree(images_dir)
+                    features_file.unlink(missing_ok=True)
                 else:
                     logger.info(f"  Skipping, outputs already exist (use --force to overwrite).")
                     continue
             
+            # Extract the images section from the JSON file
             images = get_json_section(json_file, 'images', logger)
             if images is None:
                 logger.warning(f"No images found in '{json_file.name}'")
