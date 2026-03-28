@@ -325,3 +325,11 @@ def format_file_size(size: int) -> str:
     p = math.pow(1024, i)
     s = round(size / p, 2)
     return f"{s} {size_name[i]}"
+
+
+def imshow(img):
+    """Utility function to display an image (for debugging)."""
+    import matplotlib.pyplot as plt
+    plt.imshow(img, cmap='gray', vmin=0, vmax=255)
+    plt.axis('off')
+    plt.show()
