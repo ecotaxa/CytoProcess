@@ -47,6 +47,12 @@ def _clean_background(img: np.ndarray, background_img: np.ndarray, crop: dict) -
     width = int(crop.get('Width', img.shape[1]))
     height = int(crop.get('Height', img.shape[0]))
 
+    # Correct a bug when the crop is the full background image
+    if x == 0 and width  == (img.shape[1] - 1):
+        width += 1
+    if y == 0 and height == (img.shape[0] - 1):
+        height += 1
+
     # Add reference black and white to ensure consistent dynamic range in the rescaling
     img_with_ref = np.concatenate((
         np.zeros((1, img.shape[1]), dtype=np.uint8),
