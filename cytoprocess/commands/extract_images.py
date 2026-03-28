@@ -452,6 +452,9 @@ def run(ctx, project, force=False):
                 logger.warning(f"No background image found in '{json_file.name}', using a uniform grey background instead")
                 background_img = np.ones((1200,1920), dtype=np.uint8) * 150
 
+            # Extract the pixel size from the JSON file
+            pixel_size = instrument['measurementSettings']['CytoSettings']['CytoSettings']['iif']['ImageScaleMuPerPixelP']
+
             # Create the directory
             images_dir.mkdir(parents=True, exist_ok=True)
 
@@ -491,11 +494,11 @@ def run(ctx, project, force=False):
                 img_no_bg = _clean_background(img, background_img, crop)
                 img_mask = _segment_particle(img_no_bg, logger)
                 
-                # Add scale bar to the image
-                # TODO get pixel size from the JSON file (instrument->measurementSettings->CytoSettings->iif->PixelSize)
-                img = _add_scale_bar(img, pixel_size=0.5)
-                # Add an empty area at the bottom of the mask to match the scale bar added to the image
-                img_mask = np.concatenate((img_mask, np.zeros((31, img_mask.shape[1]), dtype=np.uint8)), axis=0)
+                # Add scale bar to the image and the mask
+                # (using the same function for the mask, alhtough invisible,
+                # ensures that both images have exactly the same dimension)
+                img = _add_scale_bar(img, pixel_size=pixel_size)
+                img_mask = _add_scale_bar(img_mask, pixel_size=pixel_size)
 
                 features = _extract_features(img_mask, img)
                 if features is None:

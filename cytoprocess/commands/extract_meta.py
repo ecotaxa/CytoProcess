@@ -229,13 +229,9 @@ def run(ctx, project, list_keys=False, force=False):
                             logger.debug(f"Key '{json_path}' not found in {json_file.name}")
                         else:
                             meta[full_column_name] = value
-
-                    # Force the inclusion of pixel size because we need it later
-                    # (to draw the scale bar on images)
-                    meta["__pixel_size__"] = _get_json_item(instrument_data, 'measurementSettings.CytoSettings.CytoSettings.iif.ImageScaleMuPerPixelP')
                 
-                logger.info(f"  Extracted {len(meta)-2} metadata fields")
-                # NB: -2 to exclude the sample_id and __pixel_size__ fields
+                logger.info(f"  Extracted {len(meta)-1} metadata fields")
+                # NB: -1 to exclude the sample_id field
                 
             except ijson.JSONError as e:
                 raiseCytoError(f"Failed to parse .json file '{json_file.name}': {e}", logger)
