@@ -6,8 +6,8 @@ import imageio as iio
 from skimage import morphology, measure
 from scipy import ndimage
 import numpy as np
+import pandas as pd
 
-from cytoprocess.utils import imshow
 
 def _rescale_pixel_values(img):
     """
@@ -280,6 +280,32 @@ def _fast_particle_area(x):
     return(np.sum(x._label_image[x._slice] == x.label))
 
 
+def _extract_features(mask, image):
+    """
+    Extract morphological and intensity features from a segmented particle.
+    
+    Args:
+        mask: Binary mask of the particle
+        image: Original grayscale image
+        
+    Returns:
+        Dictionary of features
+    """
+    # Label the mask (should be single region)
+    labeled = measure.label(mask)
+
+    if labeled.max() == 0:
+        return None    
+    
+    # Extract relevant features
+    props = ['area', 'area_filled', 'axis_major_length', 'axis_minor_length', 
+             'eccentricity', 'feret_diameter_max', 'intensity_max', 'intensity_mean',
+             'intensity_median', 'intensity_min', 'intensity_std', 'perimeter', 'solidity']
+    features_table = measure.regionprops_table(labeled, intensity_image=image, properties=props)
+    
+    return features_table
+
+
 def _add_scale_bar(img: np.ndarray, pixel_size: float):
     """
     Add a scale bar at the bottom of the image
@@ -389,6 +415,7 @@ def run(ctx, project, force=False):
         # Get sample_id from file name
         sample_id = json_file.parents[0].name
         images_dir = project / path_to_sample_asset(sample_id, 'images', logger)
+        features_file = project / path_to_sample_asset(sample_id, 'image_features', logger)
 
         logger.info(f"'{sample_id}'")
 
@@ -396,12 +423,12 @@ def run(ctx, project, force=False):
             logger.debug(f"Extracting images from '{json_file.name}'")
                         
             # Check if directory already exists
-            if images_dir.exists():
+            if images_dir.exists() and features_file.exists():
                 if force:
                     logger.info(f"  Removing existing directory: '{images_dir}'")
                     shutil.rmtree(images_dir)
                 else:
-                    logger.info(f"  Skipping, output directory already exists (use --force to overwrite).")
+                    logger.info(f"  Skipping, outputs already exist (use --force to overwrite).")
                     continue
             
             images = get_json_section(json_file, 'images', logger)
@@ -426,6 +453,7 @@ def run(ctx, project, force=False):
             images_dir.mkdir(parents=True, exist_ok=True)
 
             image_count = 0
+            rows = []
             for image in images:
                 # TODO do this in parallel for all images?
 
@@ -466,7 +494,22 @@ def run(ctx, project, force=False):
                 # Add an empty area at the bottom of the mask to match the scale bar added to the image
                 img_mask = np.concatenate((img_mask, np.zeros((31, img_mask.shape[1]), dtype=np.uint8)), axis=0)
 
-                # TODO extract features
+                features = _extract_features(img_mask, img)
+                if features is None:
+                    logger.warning(f"Could not extract features from particle in image {image_file.name}")
+                    return None
+        
+                # Create row with identifiers and features
+                row = {
+                    'sample_id': sample_id,
+                    'object_id': f"{sample_id}_{particle_id}"
+                }
+                
+                # Add features, with the object_ prefix
+                for key, value in features.items():
+                    row[f"object_{key}"] = value[0]
+
+                rows += [row]
 
                 # Write the image to a JPG file and the mask to a GIF file
                 # (there is no point in saving the image as .png since the original data is already JPG compressed)
@@ -482,7 +525,14 @@ def run(ctx, project, force=False):
                     
             logger.info(f"  Extracted {image_count} images to\n  '{images_dir}'")
             total_images += image_count
-                
+
+             # Create features DataFrame and save to Parquet
+            df = pd.DataFrame(rows)
+            df = df.sort_values('object_id').reset_index(drop=True)
+            df.to_parquet(features_file, index=False)
+            
+            logger.info(f"  Saved {df.shape[1]} properties to\n  '{features_file}'")
+               
         except Exception as e:
             raiseCytoError(f"Error processing '{sample_id}': {e}", logger)
     
