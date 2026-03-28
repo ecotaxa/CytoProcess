@@ -56,11 +56,18 @@ def _clean_background(img: np.ndarray, background_img: np.ndarray, crop: dict) -
 
     # Extract corresponding background region
     x2 = x + width
-    y2 = y + height + 2
+    y2 = y + height
     bkg = background_img[y:y2, x:x2]
+    bkg_with_ref = np.concatenate((
+        # Add two lines of black, to subtract to the reference lines added above
+        # (black is 0 so it won't matter during the subtraction, but it will ensure the dimensions match)
+        np.zeros((1, bkg.shape[1]), dtype=np.uint8),
+        np.zeros((1, bkg.shape[1]), dtype=np.uint8),
+        bkg), axis=0
+    )
 
     # Subtract background
-    sub = img_with_ref.astype(np.float32) - bkg.astype(np.float32)
+    sub = img_with_ref.astype(np.float32) - bkg_with_ref.astype(np.float32)
     
     # There is noise left around the background level
     # remove the values around 0 to clean it up
