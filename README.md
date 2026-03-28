@@ -86,7 +86,7 @@ Then copy/move the .cyz files that are relevant for this project in `my_project/
 
 ### Processing samples in a project
 
-List available samples and create the `meta/samples.csv` file
+List available raw samples and create the `meta/samples.csv` file
 
 ```bash
 cytoprocess list path/to/my_project
