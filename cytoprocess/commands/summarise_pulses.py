@@ -170,8 +170,6 @@ def run(ctx, project, n_poly=10, force=False, max_cores=None):
     # Ensure output directories exist
     work_dir = project / "work"
     work_dir.mkdir(parents=True, exist_ok=True)
-    pulses_dir = project / "pulses"
-    pulses_dir.mkdir(parents=True, exist_ok=True)
     
     # Process each JSON file and write one Parquet per sample
     for json_file in json_files:
