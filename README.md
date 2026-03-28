@@ -111,10 +111,8 @@ cytoprocess extract_cyto path/to/project
 # compute pulse shapes polynomial summaries for each imaged particle
 cytoprocess summarise_pulses path/to/project
 
-# extract images 
+# extract images and their features
 cytoprocess extract_images path/to/project
-# extract features from images
-cytoprocess compute_features path/to/project
 
 # prepare files for ecotaxa upload
 cytoprocess prepare path/to/project
