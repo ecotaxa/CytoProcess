@@ -107,11 +107,12 @@ def summarise_pulses(ctx, project, n_poly, force, max_cores):
 @cli.command(name="extract_images")
 @click.argument("project", type=click.Path(exists=True))
 @click.option("--force", is_flag=True, help="Force extraction even if output files already exist")
+@click.option("--max-cores", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing")
 @click.pass_context
-def extract_images(ctx, project, force):
+def extract_images(ctx, project, force, max_cores):
     """Extract images from .json files."""
     from cytoprocess.commands import extract_images
-    extract_images.run(ctx, project=Path(project), force=force)
+    extract_images.run(ctx, project=Path(project), force=force, max_cores=max_cores)
 
 
 @cli.command(name="prepare")
@@ -167,7 +168,7 @@ def all(ctx, project, force, n_poly, max_cores):
     
     summarise_pulses.run(ctx, project=Path(project), force=force, n_poly=n_poly, max_cores=max_cores)
 
-    extract_images.run(ctx, project=Path(project), force=force)
+    extract_images.run(ctx, project=Path(project), force=force, max_cores=max_cores)
         
     prepare.run(ctx, project=Path(project), force=force, max_cores=max_cores)
     

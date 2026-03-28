@@ -1,6 +1,9 @@
 import base64
 import shutil
 import logging
+import os
+from multiprocessing import Pool
+from functools import partial
 from cytoprocess.utils import list_sample_assets, path_to_sample_asset, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
 import imageio as iio
 from skimage import morphology, measure
@@ -233,7 +236,7 @@ def _clean_background(img: np.ndarray, background_img: np.ndarray, crop: dict) -
 #     return mask
 
 
-def _segment_particle(img: np.ndarray, logger: logging.Logger) -> np.ndarray:
+def _segment_particle(img: np.ndarray, logger: logging.Logger | None) -> np.ndarray:
     """
     Segment the largest particle from an image using edge detection and morphological operations.
     
@@ -263,7 +266,8 @@ def _segment_particle(img: np.ndarray, logger: logging.Logger) -> np.ndarray:
     # Label connected regions
     labeled = measure.label(filled)
     if labeled.max() == 0:
-        logger.warning("No particles found in image")
+        if logger is not None:
+            logger.warning("No particles found in image")
         return filled
     
     # Find the largest region
@@ -394,13 +398,85 @@ def _add_scale_bar(img: np.ndarray, pixel_size: float):
     return img
 
 
-def run(ctx, project, force=False):
+def _process_single_image(image, background_img, pixel_size, sample_id, images_dir):
+    """
+    Process a single image. Returns a tuple of (row_dict, success, error_msg).
+    This function is designed to run in parallel.
+    """
+    try:
+        # Extract elements for the current image
+        particle_id = image.get('particleId')                
+        if particle_id is None:
+            return (None, False, "Image missing 'particleId'")
+        
+        base64_data = image.get('base64')
+        if base64_data is None:
+            return (None, False, f"Image {particle_id} missing 'base64' data")
+
+        crop = image.get('cropRectangle')
+        if crop is None:
+            return (None, False, f"Image {particle_id} missing 'cropRectangle'")
+
+        # Decode base64 data
+        try:
+            image_data = base64.b64decode(base64_data)
+        except Exception as e:
+            return (None, False, f"Failed to decode base64 for particle {particle_id}: {e}")
+        
+        # read as an image
+        img = iio.imread(image_data)
+
+        # clean the background and segment the particle
+        img_no_bg = _clean_background(img, background_img, crop)
+        img_mask = _segment_particle(img_no_bg, None)  # Pass None for logger in parallel context
+        
+        # Add scale bar to the image and the mask
+        img = _add_scale_bar(img, pixel_size=pixel_size)
+        img_mask = _add_scale_bar(img_mask, pixel_size=pixel_size)
+
+        features = _extract_features(img_mask, img)
+        if features is None:
+            return (None, False, f"Could not extract features from particle {particle_id}")
+
+        # Write the image and mask from the worker process to avoid large IPC payloads.
+        output_file = images_dir / f"{particle_id}.jpg"
+        with open(output_file, 'wb') as img_file:
+            iio.imwrite(img_file, img, format='jpg', quality=98)
+
+        output_file = images_dir / f"{particle_id}.gif"
+        with open(output_file, 'wb') as img_file:
+            iio.imwrite(img_file, (img_mask * 255).astype(np.uint8), format='gif')
+
+        # Create row with identifiers and features
+        row = {
+            'sample_id': sample_id,
+            'object_id': f"{sample_id}_{particle_id}"
+        }
+        
+        # Add features, with the object_ prefix
+        for key, value in features.items():
+            row[f"object_{key}"] = value[0]
+
+        return (row, True, None)
+        
+    except Exception as e:
+        return (None, False, str(e))
+
+
+def run(ctx, project, force=False, max_cores=None):
     # Housekeeping for the command
     logger = setup_logging(command="extract_images", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Extracting images", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
     if force:
         logger.debug("Force flag enabled, existing image directories will be removed and recreated")
+
+    # Determine number of cores to use
+    available_cores = os.cpu_count() or 1
+    n_cores = max(1, available_cores - 1)
+    if max_cores is not None:
+        n_cores = min(n_cores, max_cores)
+    logger.debug(f"Using {n_cores} core(s) for parallel processing")
 
 
     # Get JSON files from converted directory
@@ -410,7 +486,6 @@ def run(ctx, project, force=False):
     logger.info(f"Processing {len(json_files)} .json file(s)")
     
     # Process each JSON file
-    total_images = 0
     for json_file in json_files:
         # Get sample_id from file name
         sample_id = json_file.parents[0].name
@@ -458,96 +533,37 @@ def run(ctx, project, force=False):
             # Create the directory
             images_dir.mkdir(parents=True, exist_ok=True)
 
+            # Process images in parallel
+            num_workers = min(n_cores, len(images))  # Don't create more workers than images
+            logger.debug(f"Processing {len(images)} images using {num_workers} workers")
+            
+            with Pool(num_workers) as pool:
+                process_func = partial(_process_single_image, background_img=background_img, 
+                                      pixel_size=pixel_size, sample_id=sample_id, images_dir=images_dir)
+                results = pool.map(process_func, images)
+            
+            # Process results
             image_count = 0
             rows = []
-            for image in images:
-                # TODO do this in parallel for all images?
-
-                # Extract elements for the current image
-                particle_id = image.get('particleId')                
-                if particle_id is None:
-                    logger.warning(f"Image missing 'particleId' in '{json_file.name}', skipping this image")
+            for row, success, error_msg in results:
+                if not success:
+                    logger.warning(error_msg)
                     continue
                 
-                base64_data = image.get('base64')
-                if base64_data is None:
-                    logger.warning(f"Image {particle_id} missing 'base64' data in '{json_file.name}', skipping this image")
-                    continue
-
-                crop = image.get('cropRectangle')
-                if crop is None:
-                    logger.warning(f"Image {particle_id} missing 'cropRectangle' in '{json_file.name}', skipping this image")
-                    continue
-
-                # Decode base64 data
-                try:
-                    image_data = base64.b64decode(base64_data)
-                    # NB: this is already JPG encoded data
-                except Exception as e:
-                    logger.error(f"Failed to decode base64 for particle {particle_id} in '{json_file.name}': {e}")
-                    continue
-                
-                # read as an image
-                img = iio.imread(image_data)
-
-                # clean the background and segment the particle
-                img_no_bg = _clean_background(img, background_img, crop)
-                img_mask = _segment_particle(img_no_bg, logger)
-                
-                # Add scale bar to the image and the mask
-                # (using the same function for the mask, alhtough invisible,
-                # ensures that both images have exactly the same dimension)
-                img = _add_scale_bar(img, pixel_size=pixel_size)
-                img_mask = _add_scale_bar(img_mask, pixel_size=pixel_size)
-
-                features = _extract_features(img_mask, img)
-                if features is None:
-                    logger.warning(f"Could not extract features from particle in image {image_file.name}")
-                    return None
-        
-                # Create row with identifiers and features
-                row = {
-                    'sample_id': sample_id,
-                    'object_id': f"{sample_id}_{particle_id}"
-                }
-                
-                # Add features, with the object_ prefix
-                for key, value in features.items():
-                    row[f"object_{key}"] = value[0]
-
-                rows += [row]
-
-                # Write the image to a JPG file and the mask to a GIF file
-                # (there is no point in saving the image as .png since the original data is already JPG compressed)
-                output_file = images_dir / f"{particle_id}.jpg"
-                with open(output_file, 'wb') as img_file:
-                    iio.imwrite(img_file, img, format='jpg', quality=98)
-                output_file = images_dir / f"{particle_id}.gif"
-                with open(output_file, 'wb') as img_file:
-                    img_mask = (img_mask * 255).astype(np.uint8)
-                    iio.imwrite(img_file, img_mask, format='gif')
+                rows.append(row)
                 
                 image_count += 1
                     
             logger.info(f"  Extracted {image_count} images to\n  '{images_dir}'")
-            total_images += image_count
 
-             # Create features DataFrame and save to Parquet
+            # Create features DataFrame and save to Parquet
             df = pd.DataFrame(rows)
             df = df.sort_values('object_id').reset_index(drop=True)
             df.to_parquet(features_file, index=False)
             
-            logger.info(f"  Saved {df.shape[1]} properties to\n  '{features_file}'")
-               
+            logger.info(f"  Saved {df.shape[1]} properties for each image to\n  '{features_file}'")
+
         except Exception as e:
             raiseCytoError(f"Error processing '{sample_id}': {e}", logger)
     
-    logger.info(f"Total images extracted: {total_images}")
     log_command_success(logger, "Extract images")
-
-# TODO add a way to post process the images to remove the background and crop them when they are full frames
-# background = instrument['measurementSettings']['CytoSettings']['CytoSettings']['iif']['Background'].get('Data')
-# background_data = base64.b64decode(background)
-# output_file = Path(project) / "background.png"
-# with open(output_file, 'wb') as img_file:
-#     img_file.write(background_data)
