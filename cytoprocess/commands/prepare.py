@@ -1,10 +1,7 @@
 import pandas as pd
 import zipfile
-import os
-from multiprocessing import Pool
-import numpy as np
 from pathlib import Path
-from cytoprocess.utils import ensure_project_dir, setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.utils import list_sample_assets, path_to_sample_asset, setup_logging, log_command_start, log_command_success, raiseCytoError
 
 
 def _infer_ecotaxa_type(series):
@@ -36,14 +33,11 @@ def _list_samples(project: Path, sample_filter: str | None, logger) -> tuple[pd.
     Returns:
         List of sample_ids to process
     """
-    samples_file = project / "meta" / "samples.csv"
-    logger.debug(f"Checking '{samples_file}'")
-    if not samples_file.exists():
-        raiseCytoError(f"Missing samples metadata file, run `cytoprocess list {project}`.", logger)
-    
-    logger.debug(f"Reading reference samples list from '{samples_file}'")
-    samples_df = pd.read_csv(samples_file, usecols=['sample_id'])
-    samples = samples_df['sample_id'].unique().tolist()
+
+    # List directories in work/ and consider them as sample_ids
+    # (we will check later if they contain the required files)
+    work_dir = project / "work"
+    samples = [d.name for d in work_dir.iterdir() if d.is_dir()]
 
     if sample_filter:
         if sample_filter not in samples:
@@ -53,42 +47,20 @@ def _list_samples(project: Path, sample_filter: str | None, logger) -> tuple[pd.
     
     else:
         logger.info(f"Preparing EcoTaxa file for {len(samples)} sample(s)")
+
+        # Compare the list with raw files
+        avail_raw_files = list_sample_assets(project, kind="cyz", logger=logger)
+        used_raw_files = [project / path_to_sample_asset(s, kind="cyz", logger=logger) for s in samples]
+        extra_raw_files = set(avail_raw_files) - set(used_raw_files)
+        if len(extra_raw_files) == 1:
+            logger.warning(f"Found one unprocessed .cyz file':\n{(str(list(extra_raw_files)[0]))}\nTo include it, re-run `cytoprocess list {project}`, fill in the metadata for this sample, run all processing steps, and then re-run `cytoprocess prepare {project}`.")
+        elif len(extra_raw_files) > 1:
+            logger.warning(f"Found {len(extra_raw_files)} unprocessed .cyz files':\n{sorted(str(f) for f in extra_raw_files)}\nTo include them, re-run `cytoprocess list {project}`, fill in the metadata for these samples, run all processing steps, and then re-run `cytoprocess prepare {project}`.")
     
     return samples
 
 
-def _detect_extra_samples(project: Path, samples: list[str], logger) -> None:
-    """
-    Detect and warn about samples in work/ that are not listed in samples.csv.
-    
-    Args:
-        project: Path to project directory
-        samples: List of sample_ids existing in samples.csv
-        logger: Logger instance
-    """
-    work_dir = project / "work"
-
-    instrument_meta_file = work_dir / "sample_metadata_from_instrument.parquet"
-    if instrument_meta_file.exists():
-        logger.debug(f"Reading instrument metadata from '{instrument_meta_file}'")
-        instrument_meta_df = pd.read_parquet(instrument_meta_file, columns=['sample_id'])
-        work_samples = set(instrument_meta_df['sample_id'].tolist())
-    else:
-        work_samples = set()
-    
-    for pattern, suffix in [("*_cytometric_features.parquet", "_cytometric_features"),
-                            ("*_pulses.parquet", "_pulses"),
-                            ("*_image_features.parquet", "_image_features")]:
-        for file in sorted(work_dir.glob(pattern)):
-            sample_id = file.stem.replace(suffix, "")
-            work_samples.add(sample_id)
-    
-    extra_samples = work_samples - set(samples)
-    if extra_samples:
-        logger.warning(f"NB: Detected {len(extra_samples)} sample(s) in 'work/' not listed in 'meta/samples.csv': {sorted(extra_samples)}; you should re-run `cytoprocess list {project}`.")
-
-
-def _ensure_sample_data(project: Path, samples: list[str], logger) -> None:
+def _ensure_complete_samples(project: Path, samples: list[str], logger) -> None:
     """
     Validate all required input data/files exist for requested samples.
     
@@ -100,87 +72,94 @@ def _ensure_sample_data(project: Path, samples: list[str], logger) -> None:
     Raises:
         CytoError if any required files are missing
     """
-    logger.debug("Verifying required input files for all requested samples")
-    
-    work_dir = project / "work"
-    instrument_meta_file = work_dir / "sample_metadata_from_instrument.parquet"
-    
-    if not instrument_meta_file.exists():
-        raiseCytoError(f"Missing metadata from the instrument, run `cytoprocess extract_meta {project}`.", logger)
 
-    logger.debug(f"Reading instrument metadata from '{instrument_meta_file}'")
-    instrument_meta_df = pd.read_parquet(instrument_meta_file, columns=['sample_id'])
-    
+    # Read the global meta/samples.csv to get a list of the sample ids it contains
+    meta_file = project / "meta" / "samples.csv"
+    logger.debug(f"Checking that '{meta_file}' exists for sample validation")
+    if not meta_file.exists():
+        raiseCytoError(f"Missing samples metadata file, run `cytoprocess list {project}`.", logger)
+    logger.debug(f"Reading samples list from '{meta_file}'")
+    meta_df = pd.read_csv(meta_file, usecols=['sample_id'])
+    samples_in_meta = meta_df['sample_id'].unique().tolist()
+
+    logger.debug("Verifying required input files for all requested samples")    
     at_least_one_missing = False
     for sample_id in samples:
-        if sample_id not in instrument_meta_df['sample_id'].values:
+
+        if sample_id not in samples_in_meta:
+            logger.warning(f"Sample '{sample_id}' not found in '{meta_file}', run `cytoprocess list {project}` to update the sample list and fill in the metadata for this sample")
+            at_least_one_missing = True
+
+        sample_meta_file = project / path_to_sample_asset(sample_id, 'metadata', logger)
+        if not sample_meta_file.exists():
             logger.warning(f"Missing metadata from the instrument, run `cytoprocess --sample '{sample_id}' extract_meta {project}`")
             at_least_one_missing = True
 
-        cytometric_file = work_dir / f"{sample_id}_cytometric_features.parquet"
-        if not cytometric_file.exists():
+        cytometric_features_file = project / path_to_sample_asset(sample_id, 'cytometric_features', logger)
+        if not cytometric_features_file.exists():
             logger.warning(f"Missing cytometric features, run `cytoprocess --sample '{sample_id}' extract_cyto {project}`")
             at_least_one_missing = True
+        # TODO check consistency in number of objects, features, images, etc.
 
-        pulses_file = work_dir / f"{sample_id}_pulses.parquet"
-        if not pulses_file.exists():
-            logger.warning(f"Missing pulses summary, run `cytoprocess --sample '{sample_id}' summarise_pulses {project}`")
+        pulses_summaries_file = project / path_to_sample_asset(sample_id, 'pulses_summaries', logger)
+        if not pulses_summaries_file.exists():
+            logger.warning(f"Missing pulses summaries, run `cytoprocess --sample '{sample_id}' summarise_pulses {project}`")
             at_least_one_missing = True
 
-        images_dir = project / "images" / sample_id
+        pulses_plots_dir = project / path_to_sample_asset(sample_id, 'pulses_plots', logger)
+        if not pulses_plots_dir.exists():
+            logger.warning(f"Missing pulses plots directory, run `cytoprocess --sample '{sample_id}' summarise_pulses {project}`")
+            at_least_one_missing = True
+
+        images_dir = project / path_to_sample_asset(sample_id, 'images', logger)
         if not images_dir.exists():
             logger.warning(f"Images not found, run `cytoprocess --sample '{sample_id}' extract_images {project}`")
             at_least_one_missing = True
-        
-        image_features_file = work_dir / f"{sample_id}_image_features.parquet"
+
+        image_features_file = project / path_to_sample_asset(sample_id, 'image_features', logger)
         if not image_features_file.exists():
-            logger.warning(f"Missing image features, run `cytoprocess --sample '{sample_id}' compute_features {project}`")
+            logger.warning(f"Missing image features, run `cytoprocess --sample '{sample_id}' extract_images {project}`")
             at_least_one_missing = True
 
     if at_least_one_missing:
         raiseCytoError("Missing input for some samples. Please run the required extraction steps before preparing EcoTaxa files.", logger)
     
 
-def _merge_sample_data(project: Path, sample_id: str, samples_meta_df: pd.DataFrame, 
-                       instrument_meta_df: pd.DataFrame, logger) -> tuple[pd.DataFrame, float]:
+def _merge_sample_data(project: Path, sample_id: str, samples_meta: pd.DataFrame, logger) -> pd.DataFrame:
     """
     Merge all data sources for a sample into a single DataFrame.
     
     Args:
         project: Path to project directory
         sample_id: The sample identifier
-        samples_meta_df: DataFrame with custom sample-level metadata
-        instrument_meta_df: DataFrame with sample-level metadata from the instrument
+        samples_meta: DataFrame with user added sample-level metadata
         logger: Logger instance
         
     Returns:
-        Tuple of (merged DataFrame, pixel_size in mm)
+        Merged DataFrame
     """
-    work_dir = project / "work"
-    
+
     # Get sample-level metadata for this sample
-    sample_meta = samples_meta_df[samples_meta_df['sample_id'] == sample_id]
-    instrument_meta = instrument_meta_df[instrument_meta_df['sample_id'] == sample_id]
+    sample_meta_df = samples_meta[samples_meta['sample_id'] == sample_id]
     
-    # Read object metadata files for this sample
-    cytometric_df = pd.read_parquet(work_dir / f"{sample_id}_cytometric_features.parquet")
-    image_features_df = pd.read_parquet(work_dir / f"{sample_id}_image_features.parquet")
-    pulses_df = pd.read_parquet(work_dir / f"{sample_id}_pulses.parquet")
+    # Read instrument metadata for this sample (one row)
+    instrument_meta_df = pd.read_parquet(project / path_to_sample_asset(sample_id, 'metadata', logger))
+
+    # Read object level data for this sample
+    cytometric_df = pd.read_parquet(project / path_to_sample_asset(sample_id, 'cytometric_features', logger))
+    image_features_df = pd.read_parquet(project / path_to_sample_asset(sample_id, 'image_features', logger))
+    pulses_summaries_df = pd.read_parquet(project / path_to_sample_asset(sample_id, 'pulses_summaries', logger))
 
     # If the cytometric dataframe is empty, it means there were no particles detected for this sample,
     # so we can skip the rest of the processing and return empty results
     if cytometric_df.empty:
-        return pd.DataFrame(), 0.0
-
-    # Extract pixel size from our custom column and remove it
-    pixel_size = instrument_meta.iloc[0]['__pixel_size__']
-    instrument_meta = instrument_meta.drop(columns=['__pixel_size__'])
+        return pd.DataFrame()
 
     # Merge all data
     df = cytometric_df.merge(image_features_df, on=['sample_id', 'object_id'], how='left')
-    df = df.merge(pulses_df, on=['sample_id', 'object_id'], how='left')
-    df = df.merge(sample_meta, on=['sample_id'], how='left')
-    df = df.merge(instrument_meta, on=['sample_id'], how='left')
+    df = df.merge(pulses_summaries_df, on=['sample_id', 'object_id'], how='left')
+    df = df.merge(sample_meta_df, on=['sample_id'], how='left')
+    df = df.merge(instrument_meta_df, on=['sample_id'], how='left')
 
     # Prepend sample id to acq_id to avoid conflicts
     # (and name process id the same)
@@ -189,7 +168,7 @@ def _merge_sample_data(project: Path, sample_id: str, samples_meta_df: pd.DataFr
 
     logger.debug(f"Found {len(df)} objects for sample '{sample_id}'")
     
-    return df, pixel_size
+    return df
 
 
 def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFrame:
@@ -252,14 +231,22 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
     # Create type indicators row
     type_row = {col: _infer_ecotaxa_type(df[col]) for col in df.columns}
 
-    # Duplicate the DataFrame to reference pulse shape images
-    # (they have the same id but are stored as PNG files)
-    df_png = df.copy()
-    df_png['img_file_name'] = df_png['img_file_name'].str.replace('.jpg', '.png', regex=False)
-    df_png['img_rank'] = 1
+    # Duplicate the DataFrame to reference masks and pulse shape images
+    # (they have the same id but are stored as GIF and PNG files)
+    df_masks = df.copy()
+    # Empty all columns that don't start with "img_" or end with "_id"
+    for col in df_masks.columns:
+        if not col.startswith('img_') and not col.endswith('_id'):
+            df_masks[col] = None
+    df_masks['img_file_name'] = df_masks['img_file_name'].str.replace('.jpg', '.gif', regex=False)
+    df_masks['img_rank'] = 1
+
+    df_pulses = df_masks.copy()
+    df_pulses['img_file_name'] = df_pulses['img_file_name'].str.replace('.gif', '.png', regex=False)
+    df_pulses['img_rank'] = 2
 
     # Combine the two DataFrames
-    df = pd.concat([df, df_png], ignore_index=True)
+    df = pd.concat([df, df_masks, df_pulses], ignore_index=True)
     # Sort by object_id for consistent ordering
     df = df.sort_values(by="object_id").reset_index(drop=True)
     
@@ -273,63 +260,42 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
     return df
 
 
-def _create_ecotaxa_zip(tsv_file: Path, zip_file: Path, images_dir: Path, pulses_dir: Path,
-                        ecotaxa_dir: Path, pixel_size: float, max_cores: int, logger) -> None:
+def _create_ecotaxa_zip(project: Path, sample_id: str, tsv_file: Path, zip_file: Path, logger) -> None:
     """
     Create EcoTaxa ZIP file containing TSV and processed images with scale bars.
     
     Cleans up temporary files (TSV and processed images) after creating the ZIP.
     
     Args:
+        project: Path to project directory
+        sample_id: ID of the sample for which to create the ZIP file
         tsv_file: Path to the TSV file to include
         zip_file: Path to output ZIP file
-        images_dir: Directory containing source PNG images
-        ecotaxa_dir: Directory for temporary processed images
-        pixel_size: Pixel size in mm (for scale bar)
-        max_cores: Maximum number of cores to use
         logger: Logger instance
     """
+
+    # List images to include in the zip file
+    pulses_dir = project / path_to_sample_asset(sample_id, 'pulses_plots', logger)
+    images_dir = project / path_to_sample_asset(sample_id, 'images', logger)
+
     pulses_files = list(pulses_dir.glob("*.png"))
     image_files = list(images_dir.glob("*.jpg"))
-    processed_images = []
+    mask_files = list(images_dir.glob("*.gif"))
+
+    all_images = pulses_files + image_files + mask_files
     
-    logger.debug(f"Processing {len(image_files)} images to zip file")
-    # Determine number of cores to use
-    available_cores = os.cpu_count() or 1
-    n_cores = max(1, available_cores - 1)
-    if max_cores is not None:
-        n_cores = min(n_cores, max_cores)
-    logger.debug(f"Using {n_cores} core(s) for parallel processing")
-    # TODO wrap this into a function and reuse it everywhere we do parallel processing
-
-    # args = [(image_file, ecotaxa_dir / image_file.name, pixel_size) for image_file in image_files]
-    # with Pool(processes=n_cores) as pool:
-    #     processed_images = pool.map(_add_scale_bar_multiprocessing, args)
-
     logger.debug(f"Creating zip file '{zip_file}'")
     with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-        # Add the TSV file
         zf.write(tsv_file, tsv_file.name)
 
-        # Add processed images to zip
-        for processed_image in processed_images:
-            zf.write(processed_image, processed_image.name)
-
-        # Add all pulses files to the zip
-        logger.debug(f"Adding {len(pulses_files)} pulse plot images to zip file")
-        for pulse_file in pulses_files:
-            zf.write(pulse_file, pulse_file.name)
+        for image_file in all_images:
+            zf.write(image_file, image_file.name)
     
-    logger.debug(f"Created zip file '{zip_file}' with {len(image_files)} images")
+    logger.debug(f"Created zip file '{zip_file}' with {len(pulses_files)} objects")
 
     # Remove the TSV file after adding it to the zip
     logger.debug(f"Removing temporary TSV file '{tsv_file}'")
     tsv_file.unlink()
-    
-    # Remove processed images after adding them to the zip
-    logger.debug(f"Removing {len(processed_images)} temporary processed images")
-    for processed_image in processed_images:
-        processed_image.unlink()
 
 
 def run(ctx, project, force=False, only_tsv=False, max_cores=None):
@@ -343,27 +309,22 @@ def run(ctx, project, force=False, only_tsv=False, max_cores=None):
         logger.debug("only-tsv flag enabled: only creating TSV files, not ZIP files with images")
 
 
-    work_dir = project / "work"
     sample_filter = getattr(ctx, "obj", {}).get("sample")
 
     # List samples to process from meta/samples.csv
+    # (limit to the sample specified by --sample if provided)
     samples = _list_samples(project, sample_filter, logger)        
 
-    # Warn about extra samples in work/, if we are processing all samples
-    # When --sample is used, work/ likely contains other samples so we skip this check
-    if not sample_filter:
-        _detect_extra_samples(project, samples, logger)
-
-    # Check that all required input data/files exist for the target samples
-    _ensure_sample_data(project, samples, logger)
+    # Check that all required input data/files exist for the target sample(s)
+    _ensure_complete_samples(project, samples, logger)
 
     # Prepare storage
-    ecotaxa_dir = ensure_project_dir(project, "ecotaxa")
+    ecotaxa_dir = project / "ecotaxa"
+    ecotaxa_dir.mkdir(parents=True, exist_ok=True)
 
-    # Read sample-level metadata and instrument metadata
-    # We do not need checks here these the existence of these files is already verified 
+    # Read the global sample-level metadata (one row per sample)
+    # to merge it below with the sample-level information
     samples_meta_df = pd.read_csv(project / "meta" / "samples.csv")
-    instrument_meta_df = pd.read_parquet(work_dir / "sample_metadata_from_instrument.parquet")
 
     for sample_id in samples:
         logger.info(f"'{sample_id}'")
@@ -380,7 +341,7 @@ def run(ctx, project, force=False, only_tsv=False, max_cores=None):
         logger.info(f"  Collating '{tsv_file}'")
 
         # Merge all data for this sample
-        df, pixel_size = _merge_sample_data(project, sample_id, samples_meta_df, instrument_meta_df, logger)
+        df = _merge_sample_data(project, sample_id, samples_meta_df, logger)
         # If the merged dataframe is empty, skip to the next sample
         if df.empty:
             logger.warning(f"No imaged particles for sample '{sample_id}', skipping.")
@@ -395,9 +356,6 @@ def run(ctx, project, force=False, only_tsv=False, max_cores=None):
 
         # Create zip file
         logger.info(f"  Assembling '{zip_file}'")
-        images_dir = project / "images" / sample_id
-        pulses_dir = project / "pulses" / sample_id
-        _create_ecotaxa_zip(tsv_file, zip_file, images_dir, pulses_dir, ecotaxa_dir, pixel_size, max_cores, logger)
-        # TODO move image processing in extract_images
+        _create_ecotaxa_zip(project, sample_id, tsv_file, zip_file, logger)
 
     log_command_success(logger, "Prepare EcoTaxa files")
