@@ -248,7 +248,6 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
     # Order columns for cleanness
     ordered_cols = img_cols + object_cols + process_cols + acq_cols + sample_cols
     df = df[ordered_cols]
-    # TODO review, it seems the order is a bit random once imported...
     
     # Create type indicators row
     type_row = {col: _infer_ecotaxa_type(df[col]) for col in df.columns}
