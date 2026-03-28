@@ -167,9 +167,7 @@ def run(ctx, project, list_keys=False, force=False):
             logger.info(f"Found {len(keys)} unique metadata items across all .json files")
 
         # Write keys to file
-        meta_dir = project / "meta"
-        meta_dir.mkdir(parents=True, exist_ok=True)
-        keys_file = meta_dir / "available_metadata_fields.txt"
+        keys_file = project / "config" / "available_metadata_fields.txt"
         with open(keys_file, 'w') as f:
             for key_path in sorted(keys):
                 f.write(f"{key_path}\n")

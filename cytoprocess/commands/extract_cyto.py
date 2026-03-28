@@ -137,9 +137,7 @@ def run(ctx, project, list_keys=False, force=False):
         logger.info(f"Found {len(paths)} parameter paths")
         
         # Write paths to file
-        meta_dir = project / "meta"
-        meta_dir.mkdir(parents=True, exist_ok=True)
-        paths_file = meta_dir / "available_cytometric_features.txt"
+        paths_file = project / "config" / "available_cytometric_features.txt"
         with open(paths_file, 'w') as f:
             for path in paths:
                 f.write(f"{path}\n")
