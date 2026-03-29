@@ -1,9 +1,9 @@
 import subprocess
 from pathlib import Path
 import click
+from cytoprocess.logging import setup_logging, log_command_success, log_command_start
 from cytoprocess.utils import (
     list_sample_assets, path_to_sample_asset,
-    setup_logging, log_command_success, log_command_start,
     raiseCytoError
 )
 from cytoprocess.commands import install

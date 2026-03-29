@@ -6,7 +6,7 @@
 
 import click
 from pathlib import Path
-from cytoprocess.utils import setup_logging
+from cytoprocess.logging import setup_logging
 
 # List commands in the order they appear in this file
 class NaturalOrderGroup(click.Group):

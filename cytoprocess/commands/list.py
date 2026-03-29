@@ -1,9 +1,9 @@
 import click
 import pandas as pd
 from pathlib import Path
+from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 from cytoprocess.utils import (
     list_sample_assets,
-    setup_logging, log_command_start, log_command_success
 )
 
 

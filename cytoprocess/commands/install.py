@@ -8,8 +8,8 @@ import tempfile
 import zipfile
 from pathlib import Path
 import click
+from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 from cytoprocess.utils import (
-    setup_logging, log_command_start, log_command_success,
     raiseCytoError
 )
 

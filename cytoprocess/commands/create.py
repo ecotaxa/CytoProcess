@@ -1,7 +1,7 @@
 import shutil
 import click
 from pathlib import Path
-from cytoprocess.utils import setup_logging, log_command_start, log_command_success
+from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 
 
 def run(ctx: click.Context, project: Path):

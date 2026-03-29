@@ -2,7 +2,8 @@ import logging
 import shutil
 import click
 from pathlib import Path
-from cytoprocess.utils import setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.logging import setup_logging, log_command_start, log_command_success
+from cytoprocess.utils import raiseCytoError
 
 
 def _remove_directory(directory: Path, logger: logging.Logger) -> bool:

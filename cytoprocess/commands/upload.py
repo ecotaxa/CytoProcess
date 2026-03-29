@@ -6,7 +6,8 @@ import time
 import yaml
 import keyring
 import requests
-from cytoprocess.utils import setup_logging, log_command_start, log_command_success, raiseCytoError, get_sample_files, format_file_size
+from cytoprocess.logging import setup_logging, log_command_start, log_command_success
+from cytoprocess.utils import raiseCytoError, get_sample_files, format_file_size
 
 # EcoTaxa API base URL
 ECOTAXA_API_URL = "https://ecotaxa.obs-vlfr.fr/api"

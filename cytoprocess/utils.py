@@ -4,130 +4,9 @@ import logging
 import click
 import ijson
 from pathlib import Path
-from datetime import datetime
-import copy
-import re
 import math
 import yaml
-
-
-def setup_logging(command: str = None, project: Path = None, debug: bool = False) -> logging.Logger:
-    """
-    Set up logging for a command, with optional file and console handlers.
-    
-    Args:
-        command: The command name (e.g., 'convert', 'cleanup')
-        project: The project directory path. If provided, logs are also written to file.
-        debug: If True, console logs at DEBUG level; otherwise INFO level.
-        
-    Returns:
-        A configured logger instance for the command.
-        
-    Examples:
-        >>> logger = setup_logging('convert', Path('/path/to/project'), debug=True)
-        >>> logger = setup_logging('install')  # Console only
-    """
-
-    logger = logging.getLogger(f"{command}" if command else "cytoprocess")
-    logger.setLevel(logging.DEBUG)  # Logger captures all; handlers filter
-    
-    # Prevent adding duplicate handlers if called multiple times
-    if logger.handlers:
-        return logger
-    
-    # Default console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
-
-    # Output some messages in colour
-    class ColourFormatter(logging.Formatter):
-        # get ANSI color codes
-        yellow = "\x1b[33m"
-        red = "\x1b[31m"
-        bold_red = "\x1b[1;31m"
-        reset = "\x1b[0m"
-        format = '%(message)s'
-
-        FORMATS = {
-            logging.DEBUG: format,
-            logging.INFO: format,
-            logging.WARNING: yellow + format + reset,
-            logging.ERROR: red + format + reset,
-            logging.CRITICAL: bold_red + format + reset
-        }
-
-        def format(self, record):
-            log_fmt = self.FORMATS.get(record.levelno)
-            formatter = logging.Formatter(log_fmt)
-            return formatter.format(record)
-    # Use the colour formatter (only for console output)
-    console_handler.setFormatter(ColourFormatter())
-    logger.addHandler(console_handler)
-    
-    # File handler (only if project is specified)
-    if project is not None and project.exists():
-        # Define a custom file handler that cleans log messages
-        class CleanupFormatter:
-            def emit(self, record):
-                s = record.getMessage()
-                # Remove newlines
-                s = s.replace("\n", " ")
-                # Remove ANSI color codes
-                s = re.sub(r'\x1b\[[0-9;]*m', '', s)
-                # Remove Emojis
-                s = re.sub(r'[^\x00-\x7F]+', '>', s)
-                rec = copy.copy(record)
-                rec.msg = s
-                super().emit(rec)
-        class CleanFileHandler(CleanupFormatter, logging.FileHandler):
-            pass
-        
-        # Ensure logs directory exists
-        log_dir = project / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_filename = f"{datetime.now().strftime('%Y-%m-%d')}_cytoprocess.log"
-        
-        file_handler = CleanFileHandler(log_dir / log_filename, mode='a')
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(logging.Formatter('%(asctime)s\t%(levelname)-7s\t%(name)-16s\t%(message)s'))
-        logger.addHandler(file_handler)
-    
-    return logger
-
-
-def log_command_start(logger: logging.Logger, message: str, project: Path = None):
-    """
-    Log the start of a command execution with fancy formatting.
-    
-    Args:
-        logger: The logger instance to use
-        message: The message to log
-        project: The project directory path
-        
-    Examples:
-        >>> logger = logging.getLogger("cytoprocess.example")
-        >>> log_command_start(logger, 'convert', Path('/path/to/project'))
-    """
-    start = "\x1b[1;34m" # bold blue
-    reset = "\x1b[0m"
-    logger.info(f"\n{start}🛠️ {message} " + (f"in project '{project.stem}'" if project else "") + f"{reset}")
-
-
-def log_command_success(logger: logging.Logger, command: str):
-    """
-    Log the successful completion of a command with fancy formatting.
-    
-    Args:
-        logger: The logger instance to use
-        command: The command name to log
-
-    Examples:
-        >>> logger = logging.getLogger("cytoprocess.example")
-        >>> log_command_success(logger, 'convert')
-    """
-    start = "\x1b[0;32m" # non bold green
-    reset = "\x1b[0m"
-    logger.info(f"{start}✅ {command} operation successful{reset}")
+import pandas as pd
 
 
 def get_json_section(json_file: Path, key: str, logger: logging.Logger) -> dict | list | None:
@@ -219,7 +98,7 @@ def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path
         raiseCytoError(f"Invalid kind '{kind}'", logger)
     
 
-def list_sample_assets(project: Path, kind: str, logger: logging.Logger, ctx=None) -> list:
+def list_sample_assets(project: Path, kind: str, logger: logging.Logger, ctx: click.Context =None) -> list:
     """
     List all expected asset files for a given sample.
     
@@ -256,6 +135,72 @@ def list_sample_assets(project: Path, kind: str, logger: logging.Logger, ctx=Non
             return []
         logger.debug(f"Found {len(assets)} {kind} files in '{project}'")
         return assets
+
+
+def list_samples_in_meta_file(project: Path, logger: logging.Logger) -> list[str]:
+    """
+    Extract sample IDs from meta/samples.csv if it exists.
+    
+    Args:
+        project: The project directory path
+        logger: The logger instance to use for logging
+
+    Returns:
+        A list of sample IDs found in column sample_id of project/meta/samples.csv.
+    """
+    meta_file = project / "meta" / "samples.csv"
+    if not meta_file.exists():
+        logger.warning(f"Metadata file '{meta_file}' does not exist")
+        return list()
+
+    try:
+        meta_df = pd.read_csv(meta_file, usecols=["sample_id"])
+        samples_in_meta = meta_df["sample_id"].dropna().astype(str).tolist()
+        logger.debug(f"Found {len(samples_in_meta)} sample(s) in '{meta_file}'")
+        return samples_in_meta
+    except ValueError:
+        raiseCytoError(f"Column 'sample_id' is missing in '{meta_file}'")
+        return list()
+
+
+def list_samples(project: Path, sample_filter: str | None, logger: logging.Logger) -> list[str]:
+    """
+    Collect known sample IDs from raw, work, and meta
+
+    Args:
+        project: The project directory path
+        sample_filter: An optional sample name to filter by (if provided, only this sample will be returned)
+        logger: The logger instance to use for logging
+    
+    Returns:
+        A sorted list of unique sample IDs found in the project, optionally filtered by sample_filter.
+    """
+
+    # collect 
+    sample_ids: set[str] = set()
+
+    raw_dir = project / "raw"
+    if raw_dir.exists():
+        sample_ids.update([f.stem for f in list_sample_assets(project, "cyz", logger)])
+
+    work_dir = project / "work"
+    if work_dir.exists():
+        sample_ids.update([d.name for d in work_dir.iterdir() if d.is_dir()])
+
+    sample_ids.update(list_samples_in_meta_file(project, logger))
+
+    samples = sorted(sample_ids)
+    if not samples:
+        logger.warning("No samples found in raw/, work/, or meta/samples.csv")
+
+    logger.debug(f"Found {len(samples)} sample(s)")
+
+    if sample_filter:
+        logger.info(f"Checking status for sample: '{sample_filter}'")
+        return [sample_filter]
+
+    return samples
+
 
 
 def raiseCytoError(message: str, logger: logging.Logger = None):
@@ -304,7 +249,7 @@ def format_file_size(size: int) -> str:
     return f"{s} {size_name[i]}"
 
 
-def imshow(img: np.ndarray):
+def imshow(img):
     """Utility function to display an image (for debugging)."""
     import matplotlib.pyplot as plt
     plt.imshow(img, cmap='gray', vmin=0, vmax=255)
