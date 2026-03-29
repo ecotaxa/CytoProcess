@@ -2,9 +2,7 @@ import click
 import pandas as pd
 from pathlib import Path
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success
-from cytoprocess.utils import (
-    list_sample_assets,
-)
+from cytoprocess.project import list_sample_assets
 
 
 DEFAULT_EXTRA_FIELDS = "object_lon,object_lat,object_date,object_time,object_depth_min,object_depth_max,object_lon_end,object_lat_end"

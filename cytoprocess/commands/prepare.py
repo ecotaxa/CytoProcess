@@ -4,8 +4,8 @@ import pandas as pd
 import zipfile
 from pathlib import Path
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success
+from cytoprocess.project import list_sample_assets, path_to_sample_asset
 from cytoprocess.utils import (
-    list_sample_assets, path_to_sample_asset,
     raiseCytoError
 )
 
