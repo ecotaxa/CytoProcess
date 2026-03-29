@@ -152,7 +152,6 @@ def all(ctx, project, force, n_poly, max_cores):
         extract_cyto,
         summarise_pulses,
         extract_images,
-        compute_features,
         prepare,
         upload,
     )
