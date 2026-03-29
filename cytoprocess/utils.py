@@ -83,8 +83,8 @@ def setup_logging(command: str = None, project: Path = None, debug: bool = False
             pass
         
         # Ensure logs directory exists
-        ensure_project_dir(project, "logs")
         log_dir = project / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
         log_filename = f"{datetime.now().strftime('%Y-%m-%d')}_cytoprocess.log"
         
         file_handler = CleanFileHandler(log_dir / log_filename, mode='a')
@@ -128,28 +128,6 @@ def log_command_success(logger: logging.Logger, command: str):
     start = "\x1b[0;32m" # non bold green
     reset = "\x1b[0m"
     logger.info(f"{start}✅ {command} operation successful{reset}")
-
-
-def ensure_project_dir(project: str, subdir: str) -> Path:
-    """
-    Ensure a subdirectory exists within a project directory.
-    
-    Creates the directory and any parent directories if they don't exist.
-    
-    Args:
-        project: The project directory path
-        subdir: The subdirectory name (e.g., "config", "meta", "converted")
-        
-    Returns:
-        Path object for the created/verified directory
-        
-    Examples:
-        >>> config_dir = ensure_project_dir('/path/to/project', 'config')
-        >>> meta_dir = ensure_project_dir('/path/to/project', 'meta')
-    """
-    target_dir = Path(project) / subdir
-    target_dir.mkdir(parents=True, exist_ok=True)
-    return target_dir
 
 
 def get_json_section(json_file: Path, key: str, logger: logging.Logger):

@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from cytoprocess.utils import ensure_project_dir, list_sample_assets, setup_logging, log_command_start, log_command_success
+from cytoprocess.utils import list_sample_assets, setup_logging, log_command_start, log_command_success
 
 
 DEFAULT_EXTRA_FIELDS = "object_lon,object_lat,object_date,object_time,object_depth_min,object_depth_max,object_lon_end,object_lat_end"
@@ -38,7 +38,8 @@ def run(ctx, project, extra_fields=DEFAULT_EXTRA_FIELDS):
     logger.debug(f"Extra fields: {extra_field_list}")
 
     # Create metadata CSV with sample information   
-    meta_dir = ensure_project_dir(project, "meta")
+    meta_dir = project / "meta"
+    meta_dir.mkdir(parents=True, exist_ok=True)
     meta_file = meta_dir / "samples.csv"
     
     # Create 'samples' DataFrame
