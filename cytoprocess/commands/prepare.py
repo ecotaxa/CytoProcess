@@ -298,7 +298,7 @@ def _create_ecotaxa_zip(project: Path, sample_id: str, tsv_file: Path, zip_file:
     tsv_file.unlink()
 
 
-def run(ctx, project, force=False, only_tsv=False, max_cores=None):
+def run(ctx: click.Context, project: Path, force=False, only_tsv=False):
     # Housekeeping for the command
     logger = setup_logging(command="prepare", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Preparing EcoTaxa files", project)
