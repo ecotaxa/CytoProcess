@@ -55,7 +55,7 @@ def create(ctx, project):
 @click.option("--extra-fields", default="object_lon,object_lat,object_date,object_time,object_depth_min,object_depth_max,object_lon_end,object_lat_end", help="Comma-separated list of extra fields to add as columns in samples.csv")
 @click.pass_context
 def list_samples(ctx, project, extra_fields):
-    """List samples and create/update samples.csv."""
+    """List samples and create/update meta/samples.csv."""
     from cytoprocess.commands import list as list_cmd
     list_cmd.run(ctx, project=Path(project), extra_fields=extra_fields)
 
@@ -76,7 +76,7 @@ def convert(ctx, project, force):
 @click.option("--force", is_flag=True, default=False, help="Force extraction even if output files already exist")
 @click.pass_context
 def extract_meta(ctx, project, list_keys, force):
-    """Extract sample metadata from .json files."""
+    """Extract instrument metadata from .json files."""
     from cytoprocess.commands import extract_meta
     extract_meta.run(ctx, project=Path(project), list_keys=list_keys, force=force)
 
