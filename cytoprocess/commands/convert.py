@@ -22,7 +22,7 @@ def run(ctx, project, force=False):
     
 
     # Detect possible set_definition.xml that overrides the default one included in .cyz file
-    set_definition_path = Path(project) / "config" / "set_definition.xml"
+    set_definition_path = project / "config" / "set_definition.xml"
     if set_definition_path.exists():
         logger.info(f"Using new set definition from '{set_definition_path}'")
         set_definition_command = ["--imaging-set-definition", str(set_definition_path)]

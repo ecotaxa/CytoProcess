@@ -11,7 +11,7 @@ import math
 import yaml
 
 
-def setup_logging(command: str = None, project: str = None, debug: bool = False) -> logging.Logger:
+def setup_logging(command: str = None, project: Path = None, debug: bool = False) -> logging.Logger:
     """
     Set up logging for a command, with optional file and console handlers.
     
@@ -24,7 +24,7 @@ def setup_logging(command: str = None, project: str = None, debug: bool = False)
         A configured logger instance for the command.
         
     Examples:
-        >>> logger = setup_logging('convert', '/path/to/project', debug=True)
+        >>> logger = setup_logging('convert', Path('/path/to/project'), debug=True)
         >>> logger = setup_logging('install')  # Console only
     """
 
@@ -65,7 +65,7 @@ def setup_logging(command: str = None, project: str = None, debug: bool = False)
     logger.addHandler(console_handler)
     
     # File handler (only if project is specified)
-    if project is not None and Path(project).exists():
+    if project is not None and project.exists():
         # Define a custom file handler that cleans log messages
         class CleanupFormatter:
             def emit(self, record):
@@ -83,8 +83,8 @@ def setup_logging(command: str = None, project: str = None, debug: bool = False)
             pass
         
         # Ensure logs directory exists
-        log_dir = Path(project) / "logs"
         ensure_project_dir(project, "logs")
+        log_dir = project / "logs"
         log_filename = f"{datetime.now().strftime('%Y-%m-%d')}_cytoprocess.log"
         
         file_handler = CleanFileHandler(log_dir / log_filename, mode='a')
@@ -95,7 +95,7 @@ def setup_logging(command: str = None, project: str = None, debug: bool = False)
     return logger
 
 
-def log_command_start(logger: logging.Logger, message: str, project: str):
+def log_command_start(logger: logging.Logger, message: str, project: Path = None):
     """
     Log the start of a command execution with fancy formatting.
     
@@ -106,11 +106,11 @@ def log_command_start(logger: logging.Logger, message: str, project: str):
         
     Examples:
         >>> logger = logging.getLogger("cytoprocess.example")
-        >>> log_command_start(logger, 'convert', '/path/to/project')
+        >>> log_command_start(logger, 'convert', Path('/path/to/project'))
     """
     start = "\x1b[1;34m" # bold blue
     reset = "\x1b[0m"
-    logger.info(f"\n{start}🛠️ {message} " + (f"in project '{Path(project).stem}'" if project else "") + f"{reset}")
+    logger.info(f"\n{start}🛠️ {message} " + (f"in project '{project.stem}'" if project else "") + f"{reset}")
 
 
 def log_command_success(logger: logging.Logger, command: str):
@@ -181,7 +181,7 @@ def get_json_section(json_file: Path, key: str, logger: logging.Logger):
     return data
 
 
-def load_config(project: str, logger: logging.Logger) -> dict:
+def load_config(project: Path, logger: logging.Logger) -> dict:
     """
     Load the configuration from the project's config.yaml file.
     
@@ -194,10 +194,10 @@ def load_config(project: str, logger: logging.Logger) -> dict:
         
     Examples:
         >>> logger = logging.getLogger("cytoprocess.example")
-        >>> config = load_config('/path/to/project', logger)
+        >>> config = load_config(Path('/path/to/project'), logger)
     """
 
-    config_file = Path(project) / "config" / "config.yaml"
+    config_file = project / "config" / "config.yaml"
     
     if not config_file.exists():
         raiseCytoError(f"Configuration file not found: '{config_file}', run 'cytoprocess create {project}' again.", logger)
@@ -241,7 +241,7 @@ def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path
         raiseCytoError(f"Invalid kind '{kind}'", logger)
     
 
-def list_sample_assets(project: str, kind: str, logger: logging.Logger, ctx=None) -> list:
+def list_sample_assets(project: Path, kind: str, logger: logging.Logger, ctx=None) -> list:
     """
     List all expected asset files for a given sample.
     
@@ -263,7 +263,6 @@ def list_sample_assets(project: str, kind: str, logger: logging.Logger, ctx=None
     else:
         raiseCytoError(f"Invalid kind '{kind}'", logger)
     
-    project = Path(project)
     sample = getattr(ctx, "obj", {}).get("sample")
     if sample:
         asset = project / path_to_sample_asset(sample, kind, logger)

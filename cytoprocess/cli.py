@@ -156,7 +156,7 @@ def all(ctx, project, force, n_poly, max_cores):
         upload,
     )
     
-    logger = setup_logging(command="all", project=project, debug=ctx.obj["debug"])
+    logger = setup_logging(command="all", project=Path(project), debug=ctx.obj["debug"])
     logger.info(f"Running all processing steps for project: {project}")
     
     convert.run(ctx, project=Path(project), force=force)
