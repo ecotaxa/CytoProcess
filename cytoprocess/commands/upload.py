@@ -1,6 +1,7 @@
 import logging
 import getpass
 from pathlib import Path
+import click
 import time
 import yaml
 import keyring
@@ -356,7 +357,7 @@ def monitor_job(logger: logging.Logger, token: str, job_id: int, poll_interval: 
         time.sleep(poll_interval)
 
 
-def run(ctx, project, username: str | None = None, password: str | None = None):
+def run(ctx: click.Context, project: Path, username: str | None = None, password: str | None = None):
     logger = setup_logging(command="upload", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Uploading samples to EcoTaxa", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))

@@ -1,10 +1,16 @@
+import logging
+import click
 import pandas as pd
 import zipfile
 from pathlib import Path
-from cytoprocess.utils import list_sample_assets, path_to_sample_asset, setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.utils import (
+    list_sample_assets, path_to_sample_asset,
+    setup_logging, log_command_start, log_command_success,
+    raiseCytoError
+)
 
 
-def _infer_ecotaxa_type(series):
+def _infer_ecotaxa_type(series: pd.Series) -> str:
     """
     Infer EcoTaxa column type from pandas Series.
         
@@ -21,7 +27,7 @@ def _infer_ecotaxa_type(series):
         return '[t]'
 
 
-def _list_samples(project: Path, sample_filter: str | None, logger) -> tuple[pd.DataFrame, list[str]]:
+def _list_samples(project: Path, sample_filter: str | None, logger: logging.Logger) -> tuple[pd.DataFrame, list[str]]:
     """
     List samples to process from meta/samples.csv and optionally filter by sample_id.
     
@@ -60,7 +66,7 @@ def _list_samples(project: Path, sample_filter: str | None, logger) -> tuple[pd.
     return samples
 
 
-def _ensure_complete_samples(project: Path, samples: list[str], logger) -> None:
+def _ensure_complete_samples(project: Path, samples: list[str], logger: logging.Logger) -> None:
     """
     Validate all required input data/files exist for requested samples.
     

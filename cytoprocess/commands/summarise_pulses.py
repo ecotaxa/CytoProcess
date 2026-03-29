@@ -1,9 +1,14 @@
 from pathlib import Path
-
+import click
 import numpy as np
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
-from cytoprocess.utils import list_sample_assets, path_to_sample_asset, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.utils import (
+    list_sample_assets, path_to_sample_asset,
+    get_json_section,
+    setup_logging, log_command_start, log_command_success,
+    raiseCytoError
+)
 import imageio as iio
 import os
 from multiprocessing import Pool
@@ -17,7 +22,7 @@ plt.rcParams["figure.autolayout"] = True
 plt.rcParams["font.size"] = 8
 
 
-def _normalise_pulse(values):
+def _normalise_pulse(values: list) -> np.ndarray:
     """
     Normalise a pulse vector to the range [0, 1].
     
@@ -37,7 +42,7 @@ def _normalise_pulse(values):
     return (arr - min_val) / (max_val - min_val)
 
 
-def _fit_polynomial(pulse, n_poly):
+def _fit_polynomial(pulse: np.ndarray, n_poly: int) -> np.ndarray:
     """
     Fit a polynomial to a normalised pulse and return coefficients.
     
@@ -144,7 +149,7 @@ def _process_single_particle(args):
         return None
 
 
-def run(ctx, project, n_poly=10, force=False, max_cores=None):
+def run(ctx: click.Context, project: Path, n_poly=10, force=False, max_cores=None):
     # Housekeeping for the command
     logger = setup_logging(command="summarise_pulses", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Summarising pulse shapes", project)

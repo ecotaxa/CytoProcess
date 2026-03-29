@@ -1,10 +1,15 @@
 import subprocess
 from pathlib import Path
-from cytoprocess.utils import list_sample_assets, path_to_sample_asset, log_command_success, setup_logging, log_command_start, raiseCytoError
+import click
+from cytoprocess.utils import (
+    list_sample_assets, path_to_sample_asset,
+    setup_logging, log_command_success, log_command_start,
+    raiseCytoError
+)
 from cytoprocess.commands import install
 
 
-def run(ctx, project, force=False):
+def run(ctx: click.Context, project: Path, force=False):
     # Housekeeping for the command
     logger = setup_logging(command="convert", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Converting .cyz files", project)

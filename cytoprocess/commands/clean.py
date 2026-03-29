@@ -1,6 +1,7 @@
 import logging
-from pathlib import Path
 import shutil
+import click
+from pathlib import Path
 from cytoprocess.utils import setup_logging, log_command_start, log_command_success, raiseCytoError
 
 
@@ -28,7 +29,7 @@ def _remove_directory(directory: Path, logger: logging.Logger) -> bool:
         raiseCytoError(f"Error removing directory: {e}", logger)
 
 
-def run(ctx, project):
+def run(ctx: click.Context, project: Path):
     # Housekeeping for the command
     logger = setup_logging(command="cleanup", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Cleaning up intermediate files", project)

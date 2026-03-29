@@ -1,10 +1,15 @@
+import click
 import ijson
 import pandas as pd
 from pathlib import Path
-from cytoprocess.utils import list_sample_assets, get_json_section, load_config, path_to_sample_asset, setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.utils import (
+    list_sample_assets, path_to_sample_asset,
+    get_json_section, load_config,
+    setup_logging, log_command_start, log_command_success,
+    raiseCytoError
+)
 
-
-def _get_json_structure(json_data, prefix=""):
+def _get_json_structure(json_data: dict, prefix=""):
     """
     Recursively extract all keys from a JSON object and return them as full paths.
     
@@ -55,7 +60,7 @@ def _get_json_structure(json_data, prefix=""):
     return paths
 
 
-def _get_json_item(json_data, path):
+def _get_json_item(json_data: dict, path: str):
     """
     Retrieve value(s) from a JSON object given a path with dot notation.
     
@@ -124,7 +129,7 @@ def _get_json_item(json_data, path):
     return current if current is not None else None
 
 
-def run(ctx, project, list_keys=False, force=False):
+def run(ctx: click.Context, project: Path, list_keys: bool=False, force: bool=False):
     # Housekeeping for the command
     logger = setup_logging(command="extract_meta", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Extracting metadata", project)

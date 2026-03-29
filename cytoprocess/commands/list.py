@@ -1,12 +1,16 @@
+import click
 import pandas as pd
 from pathlib import Path
-from cytoprocess.utils import list_sample_assets, setup_logging, log_command_start, log_command_success
+from cytoprocess.utils import (
+    list_sample_assets,
+    setup_logging, log_command_start, log_command_success
+)
 
 
 DEFAULT_EXTRA_FIELDS = "object_lon,object_lat,object_date,object_time,object_depth_min,object_depth_max,object_lon_end,object_lat_end"
 
 
-def run(ctx, project, extra_fields=DEFAULT_EXTRA_FIELDS):
+def run(ctx: click.Context, project: Path, extra_fields=DEFAULT_EXTRA_FIELDS):
     # Housekeeping for the command
     logger = setup_logging(command="list", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Listing samples", project)

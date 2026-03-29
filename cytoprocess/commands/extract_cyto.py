@@ -1,6 +1,12 @@
 from pathlib import Path
+import click
 import pandas as pd
-from cytoprocess.utils import list_sample_assets, path_to_sample_asset, get_json_section, load_config, setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.utils import (
+    list_sample_assets, path_to_sample_asset,
+    get_json_section, load_config,
+    setup_logging, log_command_start, log_command_success,
+    raiseCytoError
+)
 import ijson
 import numpy as np
 
@@ -45,7 +51,7 @@ def _get_parameters_structure(parameters):
     return paths
 
 
-def _get_parameter_value(parameters, path):
+def _get_parameter_value(parameters, path: str):
     """
     Retrieve a value from a particle's parameters list given a path.
     
@@ -86,7 +92,7 @@ def _get_parameter_value(parameters, path):
     return None
 
 
-def run(ctx, project, list_keys=False, force=False):
+def run(ctx: click.Context, project: Path, list_keys=False, force=False):
     # Housekeeping for the command
     logger = setup_logging(command="extract_cyto", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Extracting cytometric features", project)

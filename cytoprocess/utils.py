@@ -130,7 +130,7 @@ def log_command_success(logger: logging.Logger, command: str):
     logger.info(f"{start}✅ {command} operation successful{reset}")
 
 
-def get_json_section(json_file: Path, key: str, logger: logging.Logger):
+def get_json_section(json_file: Path, key: str, logger: logging.Logger) -> dict | list | None:
     """
     Load a specific section from a JSON file using streaming.
     
@@ -304,7 +304,7 @@ def format_file_size(size: int) -> str:
     return f"{s} {size_name[i]}"
 
 
-def imshow(img):
+def imshow(img: np.ndarray):
     """Utility function to display an image (for debugging)."""
     import matplotlib.pyplot as plt
     plt.imshow(img, cmap='gray', vmin=0, vmax=255)

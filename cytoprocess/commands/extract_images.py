@@ -1,10 +1,17 @@
 import base64
+import click
+from pathlib import Path
 import shutil
 import logging
 import os
 from multiprocessing import Pool
 from functools import partial
-from cytoprocess.utils import list_sample_assets, path_to_sample_asset, get_json_section, setup_logging, log_command_start, log_command_success, raiseCytoError
+from cytoprocess.utils import (
+    list_sample_assets, path_to_sample_asset,
+    get_json_section,
+    setup_logging, log_command_start, log_command_success,
+    raiseCytoError
+)
 import imageio as iio
 from skimage import morphology, measure
 from scipy import ndimage
@@ -12,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 
-def _rescale_pixel_values(img):
+def _rescale_pixel_values(img: np.ndarray) -> np.ndarray:
     """
     Rescale values in an images into the range [0, 255].
     Args:
@@ -137,7 +144,7 @@ def _fast_particle_area(x):
     return(np.sum(x._label_image[x._slice] == x.label))
 
 
-def _extract_features(mask, image):
+def _extract_features(mask: np.ndarray, image: np.ndarray) -> dict | None:
     """
     Extract morphological and intensity features from a segmented particle.
     
@@ -163,7 +170,7 @@ def _extract_features(mask, image):
     return features_table
 
 
-def _add_scale_bar(img: np.ndarray, pixel_size: float):
+def _add_scale_bar(img: np.ndarray, pixel_size: float) -> np.ndarray:
     """
     Add a scale bar at the bottom of the image
     
@@ -251,7 +258,8 @@ def _add_scale_bar(img: np.ndarray, pixel_size: float):
     return img
 
 
-def _process_single_image(image, background_img, pixel_size, sample_id, images_dir):
+def _process_single_image(image: dict, background_img: np.ndarray,
+                          pixel_size: float, sample_id: str, images_dir: Path) -> tuple[dict | None, bool, str | None]:
     """
     Process a single image. Returns a tuple of (row_dict, success, error_msg).
     This function is designed to run in parallel.
@@ -316,7 +324,7 @@ def _process_single_image(image, background_img, pixel_size, sample_id, images_d
         return (None, False, str(e))
 
 
-def run(ctx, project, force=False, max_cores=None):
+def run(ctx: click.Context, project: Path, force=False, max_cores=None):
     # Housekeeping for the command
     logger = setup_logging(command="extract_images", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Extracting images", project)

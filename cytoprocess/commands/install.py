@@ -1,13 +1,17 @@
+import logging
 import os
 import shutil
 import platform
-import subprocess
 import urllib.request
 import json
 import tempfile
 import zipfile
 from pathlib import Path
-from cytoprocess.utils import log_command_start, log_command_success, setup_logging, raiseCytoError
+import click
+from cytoprocess.utils import (
+    setup_logging, log_command_start, log_command_success,
+    raiseCytoError
+)
 
 
 def _get_or_create_bin_dir() -> Path:
@@ -27,7 +31,7 @@ def _get_executable_name() -> str:
     return executable_name
 
 
-def _get_release_file_name(logger) -> str:
+def _get_release_file_name(logger: logging.Logger) -> str:
     """Get the appropriate release file name based on OS."""
     system = platform.system().lower()
     
@@ -44,7 +48,7 @@ def _get_release_file_name(logger) -> str:
     return release_file
 
 
-def _download_latest_release(logger) -> str:
+def _download_latest_release(logger: logging.Logger) -> str:
     """Download the latest release of cyz2json and return the path to the executable."""
     # 1. Fetch latest release info from GitHub API
     logger.info("Fetching latest cyz2json release info from GitHub")
@@ -130,7 +134,7 @@ def _download_latest_release(logger) -> str:
     return str(symlink_path)
 
 
-def _check_or_get_cyz2json(logger, force: bool = False) -> str:
+def _check_or_get_cyz2json(logger: logging.Logger, force: bool = False) -> str:
     """Get the path to the cyz2json executable, downloading if necessary."""
     bin_dir = _get_or_create_bin_dir()
     executable_name = _get_executable_name()
@@ -148,7 +152,7 @@ def _check_or_get_cyz2json(logger, force: bool = False) -> str:
     return str(executable_path)
 
 
-def run(ctx, force: bool = False):
+def run(ctx: click.Context, force: bool = False):
     logger = setup_logging(command="install", project=None, debug=ctx.obj["debug"])
     log_command_start(logger, "Installing cyz2json", project=None)
     try:
