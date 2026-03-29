@@ -47,7 +47,7 @@ def _list_samples(project: Path, sample_filter: str | None, logger: logging.Logg
 
     if sample_filter:
         if sample_filter not in samples:
-            raiseCytoError(f"Sample '{sample_filter}' not found in '{samples_file}'.", logger)
+            raiseCytoError(f"Sample '{sample_filter}' not found in '{samples}'.", logger)
         samples = [sample_filter]
         logger.info(f"Preparing EcoTaxa file for sample: '{sample_filter}'")
     
