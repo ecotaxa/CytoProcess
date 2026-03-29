@@ -19,7 +19,7 @@ class NaturalOrderGroup(click.Group):
 @click.option("--sample", default=None, help="Limit processing to a single sample, specified by the (quoted) name of the .cyz file.")
 @click.pass_context
 def cli(ctx, debug, sample):
-    """CytoProcess command line interface."""
+    """CytoProcess command line interface"""
     # Prepare the context object which contains global options
     ctx.ensure_object(dict)
     ctx.obj["debug"] = debug
@@ -33,7 +33,7 @@ def cli(ctx, debug, sample):
 
 
 @cli.command(name="install")
-@click.option("--force", is_flag=True, default=False, help="Force (re)installation of the latest release even if Cyz2Json already exists")
+@click.option("--force", is_flag=True, default=False, help="Force (re)installation of the latest release even if Cyz2Json already exists.")
 @click.pass_context
 def install(ctx, force):
     """Install depency: Cyz2Json converter."""
@@ -61,7 +61,7 @@ def list_samples(ctx, project, extra_fields):
 
 
 @cli.command(name="convert")
-@click.argument("project")
+@click.argument("project", type=click.Path(exists=True))
 @click.option("--force", is_flag=True, default=False, help="Force conversion even if .json files already exist")
 @click.pass_context
 def convert(ctx, project, force):
@@ -71,7 +71,7 @@ def convert(ctx, project, force):
 
 
 @cli.command(name="extract_meta")
-@click.argument("project")
+@click.argument("project", type=click.Path(exists=True))
 @click.option("--list", "list_keys", is_flag=True, default=False, help="List all metadata items found in the .json file(s) instead of extracting some of them")
 @click.option("--force", is_flag=True, default=False, help="Force extraction even if output files already exist")
 @click.pass_context
@@ -82,9 +82,9 @@ def extract_meta(ctx, project, list_keys, force):
 
 
 @cli.command(name="extract_cyto")
-@click.argument("project")
-@click.option("--list", "list_keys", is_flag=True, default=False, help="List all cytometric fields paths found in the .json file(s) instead of extracting some of them")
-@click.option("--force", is_flag=True, default=False, help="Force extraction even if output files already exist")
+@click.argument("project", type=click.Path(exists=True))
+@click.option("--list", "list_keys", is_flag=True, default=False, help="List all cytometric fields paths found in the .json file(s) instead of extracting some of them.")
+@click.option("--force", is_flag=True, default=False, help="Force extraction even if output files already exist.")
 @click.pass_context
 def extract_cyto(ctx, project, list_keys, force):
     """Extract cytometric features from .json files."""
@@ -93,7 +93,7 @@ def extract_cyto(ctx, project, list_keys, force):
 
 
 @cli.command(name="summarise_pulses")
-@click.argument("project")
+@click.argument("project", type=click.Path(exists=True))
 @click.option("--n-poly", default=10, help="Number of polynomial coefficients")
 @click.option("--force", is_flag=True, default=False, help="Force processing even if output files already exist")
 @click.option("--max-cores", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing")
@@ -117,8 +117,8 @@ def extract_images(ctx, project, force, max_cores):
 
 @cli.command(name="prepare")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--force", is_flag=True, help="Force preparation even if output files already exist")
-@click.option("--only-tsv", is_flag=True, help="Only create TSV files, skip zip file creation (useful to update metadata only)")
+@click.option("--force", is_flag=True, help="Force preparation even if output files already exist.")
+@click.option("--only-tsv", is_flag=True, help="Only create TSV files, skip zip file creation (useful to update metadata only).")
 @click.pass_context
 def prepare(ctx, project, force, only_tsv):
     """Prepare .tsv and images for EcoTaxa."""
@@ -128,17 +128,17 @@ def prepare(ctx, project, force, only_tsv):
 
 @cli.command(name="upload")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--username", "-u", help="EcoTaxa email address")
-@click.option("--password", "-p", help="EcoTaxa password")
+@click.option("--username", "-u", help="EcoTaxa email address.")
+@click.option("--password", "-p", help="EcoTaxa password.")
 @click.pass_context
 def upload(ctx, project, username, password):
-    """Upload files to EcoTaxa. """
+    """Upload files to EcoTaxa."""
     from cytoprocess.commands import upload
     upload.run(ctx, project=Path(project), username=username, password=password)
 
 
 @cli.command(name="all")
-@click.argument("project")
+@click.argument("project", type=click.Path(exists=True))
 @click.option("--force", is_flag=True, default=False, help="Force processing even if output already exists")
 @click.option("--n-poly", default=10, help="Number of polynomial coefficients")
 @click.option("--max-cores", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing")
@@ -176,7 +176,7 @@ def all(ctx, project, force, n_poly, max_cores):
 
 
 @cli.command(name="clean")
-@click.argument("project")
+@click.argument("project", type=click.Path(exists=True))
 @click.pass_context
 def clean(ctx, project):
     """Remove intermediate files in the project."""
