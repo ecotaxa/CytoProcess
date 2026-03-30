@@ -17,9 +17,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 # Set default plot style and size
-plt.rcParams["figure.figsize"] = 7, 4
+plt.rcParams["figure.figsize"] = 4, 3
 plt.rcParams["figure.autolayout"] = True
-plt.rcParams["font.size"] = 8
+plt.rcParams["font.size"] = 6
 
 
 def _normalise_pulse(values: list) -> np.ndarray:
@@ -122,7 +122,9 @@ def _process_single_particle(args):
 
         # Plot pulses
         pulses = pd.DataFrame(pulses)
-        pulses.plot().legend(bbox_to_anchor=(1.0, 0.35))
+        pulses.plot().legend(bbox_to_anchor=(0., 1., 1., 0.),
+                             loc='lower left',  ncol=4,
+                             mode="expand", borderaxespad=0.)
         # Improve plot aesthetics
         ax = plt.gca()
         ax.set_yticks([])                     # remove Y axis
