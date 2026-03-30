@@ -15,8 +15,8 @@ class NaturalOrderGroup(click.Group):
 
 
 @click.group(cls=NaturalOrderGroup)
-@click.option("--debug", is_flag=True, default=False, help="Show debugging messages.")
-@click.option("--sample", default=None, help="Limit processing to a single sample, specified by the (quoted) name of the .cyz file.")
+@click.option("--debug", "-d", is_flag=True, default=False, help="Show debugging messages.")
+@click.option("--sample", "-s", default=None, help="Limit processing to a single sample, specified by the (quoted) name of the .cyz file.")
 @click.pass_context
 def cli(ctx, debug, sample):
     """CytoProcess command line interface"""
@@ -33,7 +33,7 @@ def cli(ctx, debug, sample):
 
 
 @cli.command(name="install")
-@click.option("--force", is_flag=True, default=False, help="Force (re)installation of the latest release even if Cyz2Json already exists.")
+@click.option("--force", "-f", is_flag=True, default=False, help="Force (re)installation of the latest release even if Cyz2Json already exists.")
 @click.pass_context
 def install(ctx, force):
     """Install depency: Cyz2Json converter."""
@@ -52,7 +52,7 @@ def create(ctx, project):
 
 @cli.command(name="list")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--extra-fields", default="object_lon,object_lat,object_date,object_time,object_depth_min,object_depth_max,object_lon_end,object_lat_end", help="Comma-separated list of extra fields to add as columns in samples.csv")
+@click.option("--extra-fields", "-e", default="object_lon,object_lat,object_date,object_time,object_depth_min,object_depth_max,object_lon_end,object_lat_end", help="Comma-separated list of extra fields to add as columns in samples.csv.")
 @click.pass_context
 def list_samples(ctx, project, extra_fields):
     """List samples and create/update meta/samples.csv."""
@@ -62,7 +62,7 @@ def list_samples(ctx, project, extra_fields):
 
 @cli.command(name="convert")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--force", is_flag=True, default=False, help="Force conversion even if .json files already exist")
+@click.option("--force", "-f", is_flag=True, default=False, help="Force conversion even if .json files already exist.")
 @click.pass_context
 def convert(ctx, project, force):
     """Convert .cyz files to .json format."""
@@ -72,8 +72,8 @@ def convert(ctx, project, force):
 
 @cli.command(name="extract_meta")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--list", "list_keys", is_flag=True, default=False, help="List all metadata items found in the .json file(s) instead of extracting some of them")
-@click.option("--force", is_flag=True, default=False, help="Force extraction even if output files already exist")
+@click.option("--list", "-l", "list_keys", is_flag=True, default=False, help="List all metadata items found in the .json file(s) instead of extracting some of them.")
+@click.option("--force", "-f", is_flag=True, default=False, help="Force extraction even if output files already exist.")
 @click.pass_context
 def extract_meta(ctx, project, list_keys, force):
     """Extract instrument metadata from .json files."""
@@ -83,8 +83,8 @@ def extract_meta(ctx, project, list_keys, force):
 
 @cli.command(name="extract_cyto")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--list", "list_keys", is_flag=True, default=False, help="List all cytometric fields paths found in the .json file(s) instead of extracting some of them.")
-@click.option("--force", is_flag=True, default=False, help="Force extraction even if output files already exist.")
+@click.option("--list", "-l", "list_keys", is_flag=True, default=False, help="List all cytometric fields paths found in the .json file(s) instead of extracting some of them.")
+@click.option("--force", "-f", is_flag=True, default=False, help="Force extraction even if output files already exist.")
 @click.pass_context
 def extract_cyto(ctx, project, list_keys, force):
     """Extract cytometric features from .json files."""
@@ -94,9 +94,9 @@ def extract_cyto(ctx, project, list_keys, force):
 
 @cli.command(name="summarise_pulses")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--n-poly", default=10, help="Number of polynomial coefficients")
-@click.option("--force", is_flag=True, default=False, help="Force processing even if output files already exist")
-@click.option("--max-cores", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing")
+@click.option("--n-poly", "-n",default=10, help="Number of polynomial coefficients")
+@click.option("--force", "-f", is_flag=True, default=False, help="Force processing even if output files already exist.")
+@click.option("--max-cores", "-m", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing.")
 @click.pass_context
 def summarise_pulses(ctx, project, n_poly, force, max_cores):
     """Summarise pulse shapes."""
@@ -106,8 +106,8 @@ def summarise_pulses(ctx, project, n_poly, force, max_cores):
 
 @cli.command(name="extract_images")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--force", is_flag=True, help="Force extraction even if output files already exist")
-@click.option("--max-cores", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing")
+@click.option("--force", "-f", is_flag=True, default=False, help="Force extraction even if output files already exist.")
+@click.option("--max-cores", "-m", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing.")
 @click.pass_context
 def extract_images(ctx, project, force, max_cores):
     """Extract images from .json files."""
@@ -120,8 +120,8 @@ def extract_images(ctx, project, force, max_cores):
 
 @cli.command(name="prepare")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--force", is_flag=True, help="Force preparation even if output files already exist.")
-@click.option("--only-tsv", is_flag=True, help="Only create TSV files, skip zip file creation (useful to update metadata only).")
+@click.option("--force", "-f", is_flag=True, default=False, help="Force preparation even if output files already exist.")
+@click.option("--only-tsv", "-t", is_flag=True, default=False, help="Only create TSV files, skip zip file creation (useful to update metadata only).")
 @click.pass_context
 def prepare(ctx, project, force, only_tsv):
     """Prepare .tsv and images for EcoTaxa."""
@@ -142,9 +142,9 @@ def upload(ctx, project, username, password):
 
 @cli.command(name="all")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--force", is_flag=True, default=False, help="Force processing even if output already exists")
-@click.option("--n-poly", default=10, help="Number of polynomial coefficients")
-@click.option("--max-cores", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing")
+@click.option("--force", "-f", is_flag=True, default=False, help="Force processing even if output already exists.")
+@click.option("--n-poly", "-n", default=10, help="Number of polynomial coefficients.")
+@click.option("--max-cores", "-m", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing.")
 @click.pass_context
 def all(ctx, project, force, n_poly, max_cores):
     """Run all processing steps in sequence."""
@@ -180,7 +180,7 @@ def all(ctx, project, force, n_poly, max_cores):
 
 @cli.command(name="status")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--width", default=40, help="Width of the sample ID display (truncated with ellipsis if too long).")
+@click.option("--width", "-w", default=40, type=int, help="Width of the sample ID display (truncated with ellipsis if too long).")
 @click.pass_context
 def status(ctx, project, width):
     """Show per-sample processing status."""
@@ -190,7 +190,7 @@ def status(ctx, project, width):
 
 @cli.command(name="clean")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--older-than", default=30, type=int, help="Remove log files older than this many days")
+@click.option("--older-than", "-o", default=30, type=int, help="Remove log files older than this many days.")
 @click.pass_context
 def clean(ctx, project, older_than):
     """Remove intermediate files in the project."""
