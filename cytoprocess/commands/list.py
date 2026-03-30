@@ -38,6 +38,7 @@ def run(ctx: click.Context, project: Path, extra_fields=DEFAULT_EXTRA_FIELDS):
     else:
         extra_field_list = []
     logger.debug(f"Extra fields: {extra_field_list}")
+    # TODO if the file exists and extra_fields is not explicitly provided, just keep the columns already existing (to avoid having to specify extra_fields everytime)
 
     # Create metadata CSV with sample information   
     meta_dir = project / "meta"
