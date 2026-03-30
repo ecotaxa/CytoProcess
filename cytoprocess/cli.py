@@ -180,11 +180,12 @@ def all(ctx, project, force, n_poly, max_cores):
 
 @cli.command(name="status")
 @click.argument("project", type=click.Path(exists=True))
+@click.option("--width", default=40, help="Width of the sample ID display (truncated with ellipsis if too long).")
 @click.pass_context
-def status(ctx, project):
+def status(ctx, project, width):
     """Show per-sample processing status."""
     from cytoprocess.commands import status
-    status.run(ctx, project=Path(project))
+    status.run(ctx, project=Path(project), width=width)
 
 
 @cli.command(name="clean")

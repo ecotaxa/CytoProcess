@@ -4,6 +4,7 @@ import yaml
 
 import pandas as pd
 import pyarrow.parquet as pq
+import click
 
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 from cytoprocess.project import list_samples, path_to_sample_asset
@@ -141,15 +142,15 @@ def _define_sample_progress(sample_status: dict) -> tuple[str, str]:
     return progress, None
 
 
-def _format_sample_id(sample_id: str, max_len: int = 30) -> str:
+def _format_sample_id(sample_id: str, width: int = 30) -> str:
     """Format sample id for display, truncating long values with ellipsis."""
-    if len(sample_id) > max_len:
-        sample_id = sample_id[: max_len - 1] + "…"
-    display_sample_id = f"{sample_id:>{max_len}}"
+    if len(sample_id) > width:
+        sample_id = sample_id[: width - 1] + "…"
+    display_sample_id = f"{sample_id:>{width}}"
     return display_sample_id
 
 
-def run(ctx, project):
+def run(ctx: click.Context, project: Path, width: int = 40):
     # Housekeeping for the command
     logger = setup_logging(command="status", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Computing processing status", project)
@@ -194,7 +195,7 @@ def run(ctx, project):
     ]
 
     # Display it in a compact form
-    display_sample_ids = [_format_sample_id(s["sample_id"], max_len=40) for s in statuses]
+    display_sample_ids = [_format_sample_id(s["sample_id"], width=width) for s in statuses]
     for status, display_sample_id in zip(statuses, display_sample_ids):
         progress, next_command = _define_sample_progress(status)
         print(f"{display_sample_id} {progress} → {next_command}")
