@@ -47,12 +47,20 @@ Each .cyz file is considered as a "sample" (and will correspond to an EcoTaxa sa
 my_project/
     config      configuration files
     raw         source .cyz files
-    converted   .json files converted from .cyz by Cyz2Json
-    meta        files storing metadata and is mapping from .json to EcoTaxa
-    images      images extracted from the .json files, in one subdirectory per file
-    work        information extracted by the various processing steps (metadata, pulses, features, etc.)
+    meta        file storing manually-provided metadata for each sample(lat, lon, etc.)
+    work        data extracted by the various processing steps
+        <sample_id_1>                in one folder per sample
+            converted_data.json          file converted from .cyz by Cyz2Json
+            cytometric_features.parquet  average cytometric measurement per image
+            image_features.parquet       features computed on each image (area, etc.)
+            images                       images with scale bar and mask for the particle
+            metadata.parquet             instrument metadata extracted from the .json file
+            pulses_plots                 plot of the pulse shapes of imaged particles
+            pulses_summaries.parquet     polynomial summaries of the pulse shapes
+        <sample_id_2>
+            ...
     ecotaxa     .zip files ready for upload in EcoTaxa
-    logs        logs of all commands executed on this project, per day
+    logs        logs of all commands executed on this project, split per day
 ```
 
 A CytoProcess command line looks like
@@ -92,7 +100,7 @@ List available raw samples and create the `meta/samples.csv` file
 cytoprocess list path/to/my_project
 ```
 
-Manually enter the required metadata (such as lon, lat, etc.) in the .csv file. You can add or remove columns as you see fit, you can use the option `--extra-fields` to determine which to add. The conventions follow those of EcoTaxa. Then performs all processing steps, for all samples, with default options 
+Manually enter the required metadata (such as lon, lat, etc.) in the .csv file. You can add or remove columns as you see fit, you can use the option `--extra-fields` to change the default column added. The conventions follow those of EcoTaxa. Then performs all processing steps, for all samples, with default options 
 
 ```bash
 cytoprocess all path/to/my_project
@@ -104,7 +112,7 @@ If you want to know the details, or proceed manually, the steps behind `all` are
 # convert .cyz files into .json and create a placeholder its metadata
 cytoprocess convert path/to/project
 
-# extract sample/acq/process level metadata from each .json file
+# extract instrument provided metadata from each .json file
 cytoprocess extract_meta path/to/project
 # extract cytometric features for each imaged particle
 cytoprocess extract_cyto path/to/project
@@ -120,6 +128,12 @@ cytoprocess prepare path/to/project
 cytoprocess upload path/to/project
 ```
 
+To check how far along the processing of each sample is, you can use
+
+```bash
+cytoprocess status path/to/project
+```
+
 
 ### Customisation
 
@@ -133,12 +147,12 @@ All commands will skip the processing of a given sample if the output is already
 
 For metadata and cytometric features extraction (`extract_meta` and `extract_cyto`), information from the json file needs to be curated and translated into EcoTaxa metadata columns. This is defined in the configuration file, by `key: value` pairs of the form `json.fields.item.name: ecotaxa_name`. To get the list of possible json fields, use the `--list` option for `extract_meta` or `extract_cyto`; it will write a text file in `config` with all possibilities. You can then copy-paste them to `config/config.yaml`.
 
-Even with all these fields available, the CytoSense may not record relevant metadata such as latitude, longitude, and date of each sample, which EcoTaxa needs to filter the data or export it to other data bases. You can provide such fields manually by editing the `meta/samples.csv` file.
+Even with all these fields available, the CytoSense may not record relevant metadata such as latitude, longitude, and date of each sample, which EcoTaxa needs to filter the data or export it to other data bases. You should provide such fields manually by editing the `meta/samples.csv` file.
 
 
 ### Cleaning up after processing
 
-Because everything is stored in the EcoTaxa files and can be re-generated from the .cyz files, you may want to remove the intermediate files, to reclaim disk space. This is done with
+Because everything is stored in the EcoTaxa files and can be re-generated from the .cyz files, you may want to remove the intermediate files, in work, as well as old log files, to reclaim disk space. This is done with
 
 ```bash
 cytoprocess clean path/to/project
