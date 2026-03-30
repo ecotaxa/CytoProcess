@@ -63,6 +63,8 @@ def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path
         return f"work/{sample}/{kind}.parquet"
     elif kind == "zip" or kind == "ecotaxa":
         return f"ecotaxa/{sample}.zip"
+    elif kind == "tsv":
+        return f"ecotaxa/{sample}.tsv"
     else:
         raiseCytoError(f"Invalid kind '{kind}'", logger)
 

@@ -335,8 +335,8 @@ def run(ctx: click.Context, project: Path, force=False, only_tsv=False):
     for sample_id in samples:
         logger.info(f"'{sample_id}'")
 
-        tsv_file = ecotaxa_dir / f"ecotaxa_{sample_id}.tsv"
-        zip_file = ecotaxa_dir / f"ecotaxa_{sample_id}.zip"
+        tsv_file = project / path_to_sample_asset(sample_id, 'tsv', logger)
+        zip_file = project / path_to_sample_asset(sample_id, 'zip', logger)
 
         # Skip if output file exists and force is not set
         if (tsv_file.exists() and only_tsv and not force) or \
