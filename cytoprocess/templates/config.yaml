@@ -1,10 +1,15 @@
 # CytoProcess configuration file
 # ------------------------------
 
-# Numeric ID of the EcoTaxa project to which data will be uploaded.
-# You can find this ID in the URL when viewing your project on EcoTaxa.
+# Configure link to EcoTaxa
 ecotaxa:
+  # Base URL of the EcoTaxa instance used
+  url: https://ecotaxa.obs-vlfr.fr
+  # Numeric ID of the EcoTaxa project to which data will be uploaded
+  # (you can find this in the project list or in the URL of the project page)
   project_id: null
+  # Time to wait for an upload to finish before considering it failed
+  # (increase if you have a slow connection)
   upload_timeout_seconds: 300 
 
 

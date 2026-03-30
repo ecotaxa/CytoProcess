@@ -6,9 +6,9 @@ import pandas as pd
 import pyarrow.parquet as pq
 import click
 
+from cytoprocess import ecotaxa
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 from cytoprocess.project import list_samples, path_to_sample_asset
-from cytoprocess.commands.upload import authenticate, _get_project_samples
 from cytoprocess.utils import raiseCytoError
 
 
@@ -176,16 +176,17 @@ def run(ctx: click.Context, project: Path, width: int = 40):
         config = yaml.safe_load(f) or {}
     ecotaxa_config = config.get("ecotaxa", {}) or {}
     project_id = ecotaxa_config.get("project_id")
+    api_url = ecotaxa_config.get("url", "https://ecotaxa.obs-vlfr.fr") + "/api"
     
     if not project_id:
         ecotaxa_samples = []
         logger.warning(f"No EcoTaxa project ID found in config file '{config_path}', skipping EcoTaxa status checks")
     else:
-        token = authenticate(logger)
+        token = ecotaxa.authenticate(api_url, logger=logger)
         if token is None:
             raiseCytoError("Authentication failed, cannot check EcoTaxa status", logger)
         else:
-            ecotaxa_samples = _get_project_samples(logger, token, project_id)
+            ecotaxa_samples = ecotaxa.get_project_samples(api_url, project_id, token, logger)
             logger.debug(f"Found {len(ecotaxa_samples)} sample(s) in EcoTaxa project '{project_id}'")
 
     # Compute status for each sample
@@ -198,7 +199,7 @@ def run(ctx: click.Context, project: Path, width: int = 40):
     display_sample_ids = [_format_sample_id(s["sample_id"], width=width) for s in statuses]
     for status, display_sample_id in zip(statuses, display_sample_ids):
         progress, next_command = _define_sample_progress(status)
-        print(f"{display_sample_id} {progress} → {next_command}")
+        print(f"{display_sample_id} {progress} " + (f"→ {next_command}" if next_command else ""))
     print("")
     print(f"Status indicators are for the presence of (1) cyz file, (2) row in meta/samples.csv, (3) converted json file, (4) instrument metadata, (5) cytometric features, (6) pulse summaries, (7) images, (8) zip file for EcoTaxa, and (9) sample on EcoTaxa. For each sample, the next step to run is indicated on the right (or None if the sample is fully processed).")
 

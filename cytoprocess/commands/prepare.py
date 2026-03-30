@@ -359,6 +359,7 @@ def run(ctx: click.Context, project: Path, force=False, only_tsv=False):
         if only_tsv:
             logger.debug("Skipping zip creation, only TSV file requested (--only-tsv)")
             continue
+        # TODO if only_tsv is used, still create the zip file but only add the tsv inside, updating it if need be. Then we will use upload --force to upload only the tsv to EcoTaxa without re-uploading the images. This is for users who want to update only the metadata after the initial upload, without having to re-upload the images which can be time consuming.
 
         # Create zip file
         logger.info(f"  Assembling '{zip_file}'")

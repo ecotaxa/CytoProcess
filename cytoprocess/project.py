@@ -61,10 +61,8 @@ def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path
         return f"work/{sample}/{kind}"
     elif kind == "metadata" or kind == "pulses_summaries" or kind == "image_features" or kind == "cytometric_features":
         return f"work/{sample}/{kind}.parquet"
-    elif kind == "zip" or kind == "ecotaxa":
-        return f"ecotaxa/{sample}.zip"
-    elif kind == "tsv":
-        return f"ecotaxa/{sample}.tsv"
+    elif kind == "zip" or kind == "tsv":
+        return f"ecotaxa/{sample}.{kind}"
     else:
         raiseCytoError(f"Invalid kind '{kind}'", logger)
 
@@ -88,6 +86,8 @@ def list_sample_assets(project: Path, kind: str, logger: logging.Logger, ctx: cl
         command = "create"
     elif kind == "json":
         command = "convert"
+    elif kind == "zip" or kind == "tsv":
+        command = "prepare"
     # NB: There may be other kinds here, the same as in path_to_sample_asset,
     #     but for now we only use this function for cyz and json files
     else:
