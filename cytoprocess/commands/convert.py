@@ -3,9 +3,7 @@ from pathlib import Path
 import click
 from cytoprocess.logging import setup_logging, log_command_success, log_command_start
 from cytoprocess.project import list_sample_assets, path_to_sample_asset
-from cytoprocess.utils import (
-    raiseCytoError
-)
+from cytoprocess.utils import raiseCytoError
 from cytoprocess.commands import install
 
 
