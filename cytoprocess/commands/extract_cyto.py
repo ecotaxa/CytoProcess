@@ -230,7 +230,6 @@ def run(ctx: click.Context, project: Path, list_keys=False, force=False):
                     # Only process particles with images
                     if not particle.get('hasImage', False):
                         continue
-                    # TODO add an --all option to also extract particles without images, which can be useful for some applications (e.g. classification from flow cytometry data only)
 
                     particle_idx = particle.get('particleId')
 

@@ -40,7 +40,6 @@ def run(ctx: click.Context, project: Path, older_than: int = 30):
     work_dir = project / "work"
     _remove_directory(work_dir, logger)
 
-    # TODO remove old log files
     # Remove old log files
     log_dir = project / "logs"
     if log_dir.exists():

@@ -106,6 +106,7 @@ def _ensure_complete_samples(project: Path, samples: list[str], logger: logging.
             logger.warning(f"Missing cytometric features, run `cytoprocess --sample '{sample_id}' extract_cyto {project}`")
             at_least_one_missing = True
         # TODO check consistency in number of objects, features, images, etc.
+        # TODO use status here (most checks are done already)
 
         pulses_summaries_file = project / path_to_sample_asset(sample_id, 'pulses_summaries', logger)
         if not pulses_summaries_file.exists():

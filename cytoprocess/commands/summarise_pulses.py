@@ -143,7 +143,6 @@ def _process_single_particle(args):
         if img.shape[2] == 4:
             img = img[:, :, :3]
             iio.imsave(img_path, img)
-        # TODO reduce the size of plots (which are currently 5x larger than the actual cytosense image); either reduce the physical size or encode it differently
         
         return row
     except Exception as e:
