@@ -115,6 +115,9 @@ def extract_images(ctx, project, force, max_cores):
     extract_images.run(ctx, project=Path(project), force=force, max_cores=max_cores)
 
 
+# TODO add a predict command which calls a user provided function to perform the prediction. Provide it with the paths to the images and their associated cytometric + image features, and expect it to return a dictionary of predicted classes + probabilities which will be added to as a new file in work/sample_id/ and included in the TSV file for upload. This will allow users to easily add their own machine learning models for classification or regression, without having to modify the core code of CytoProcess. The function could be provided as a Python file path or as a module and function name (e.g. "my_model.py::predict" or "my_module.my_model.predict"). The function should have the signature `def predict(image_path: str, metadata: dict, features: dict) -> dict`.
+
+
 @cli.command(name="prepare")
 @click.argument("project", type=click.Path(exists=True))
 @click.option("--force", is_flag=True, help="Force preparation even if output files already exist.")

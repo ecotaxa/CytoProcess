@@ -407,6 +407,8 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
     existing_samples = _get_project_samples(logger, token, project_id)
     logger.debug(f"Found {len(existing_samples)} existing sample(s) in project")
     
+    # TODO allow re-uploading only the metadata, with --force (fetch the .tsv when it exists or the tsv inside the zip)
+
     # Process each zip file: upload, import, and monitor until complete
     for zip_path in zip_files:
         # Extract sample ID from filename (ecotaxa_<sample_id>.zip)
