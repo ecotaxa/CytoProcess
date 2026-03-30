@@ -189,11 +189,12 @@ def status(ctx, project):
 
 @cli.command(name="clean")
 @click.argument("project", type=click.Path(exists=True))
+@click.option("--older-than", default=30, type=int, help="Remove log files older than this many days")
 @click.pass_context
-def clean(ctx, project):
+def clean(ctx, project, older_than):
     """Remove intermediate files in the project."""
     from cytoprocess.commands import clean
-    clean.run(ctx, project=Path(project))
+    clean.run(ctx, project=Path(project), older_than=older_than)
 
 
 def main(argv=None):
