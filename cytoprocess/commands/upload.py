@@ -70,9 +70,9 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
             logger.info(f"  Skipping, sample already exists on EcoTaxa")
             continue
         
-        # Upload
+        # Upload via TUS (resumable, with live progress)
         logger.info(f"  Uploading '{zip_path.name}' ({format_file_size(zip_path.stat().st_size)})...")
-        upload_result = ecotaxa.upload_file(api_url, token, zip_path, timeout=ecotaxa_config.get("upload_timeout_seconds", 300), logger=logger)
+        upload_result = ecotaxa.upload_file_tus(api_url, token, zip_path, logger=logger)
         logger.debug(f"Upload result: {upload_result}")
         
         if upload_result.get("errors"):

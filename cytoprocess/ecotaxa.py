@@ -1,12 +1,15 @@
+import base64
 import getpass
 import logging
+import sys
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 import keyring
 import requests
 
-from cytoprocess.utils import raiseCytoError
+from cytoprocess.utils import format_file_size, raiseCytoError
 
 KEYRING_SERVICE = "cytoprocess-ecotaxa"
 
@@ -219,6 +222,150 @@ def authenticate(
     return token
 
 
+def _list_user_files(api_url: str, token: str, sub_path: str = "", logger: logging.Logger = None) -> dict | None:
+    """List files in the user's EcoTaxa files directory."""
+    try:
+        response = requests.get(
+            f"{api_url}/user_files/{sub_path}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30,
+        )
+        if response.status_code == 200:
+            return response.json()
+        logger.debug(f"list_user_files HTTP {response.status_code}: {response.text}")
+        return None
+    except requests.RequestException as e:
+        logger.debug(f"list_user_files failed: {e}")
+        return None
+
+
+def upload_file_tus(
+    api_url: str,
+    token: str,
+    zip_path: Path,
+    chunk_size: int = 8 * 1024 * 1024,
+    logger: logging.Logger = None,
+) -> dict:
+    """
+    Upload a zip file to EcoTaxa using the TUS resumable upload protocol.
+
+    Uploads data in chunks and displays live progress to the terminal.
+
+    Args:
+        api_url: EcoTaxa API URL
+        token: JWT authentication token
+        zip_path: Path to the zip file to upload
+        chunk_size: Size of each chunk in bytes (default 8 MB)
+        logger: Logger instance
+
+    Returns:
+        Dictionary with 'server_path' if successful.
+    """
+    if not zip_path.exists():
+        raiseCytoError(f"File not found: {zip_path}", logger)
+
+    file_size = zip_path.stat().st_size
+    filename_b64 = base64.b64encode(zip_path.name.encode()).decode()
+
+    logger.debug(f"TUS upload: creating upload resource for '{zip_path.name}' ({file_size} bytes)")
+
+    # Step 1: Create the upload resource
+    create_headers = {
+        "Authorization": f"Bearer {token}",
+        "Tus-Resumable": "1.0.0",
+        "Upload-Length": str(file_size),
+        "Upload-Metadata": f"filename {filename_b64}",
+    }
+    try:
+        response = requests.post(
+            f"{api_url}/user_files/upload/",
+            headers=create_headers,
+            timeout=30,
+        )
+    except requests.RequestException as e:
+        raiseCytoError(f"TUS upload creation request failed: {e}", logger)
+
+    if response.status_code != 201:
+        raiseCytoError(f"TUS upload creation failed (HTTP {response.status_code}): {response.text}", logger)
+
+    location = response.headers.get("Location")
+    if not location:
+        raiseCytoError("TUS upload creation response is missing the Location header", logger)
+
+    # Make the URL absolute when the server returns a relative path
+    if not location.startswith("http"):
+        parsed = urlparse(api_url)
+        upload_url = f"{parsed.scheme}://{parsed.netloc}{location}"
+    else:
+        upload_url = location
+
+    logger.debug(f"TUS upload resource created: {upload_url}")
+
+    # Step 2: Upload in chunks, reporting progress
+    offset = 0
+    try:
+        with open(zip_path, "rb") as f:
+            while offset < file_size:
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    break
+
+                patch_headers = {
+                    "Authorization": f"Bearer {token}",
+                    "Tus-Resumable": "1.0.0",
+                    "Content-Type": "application/offset+octet-stream",
+                    "Content-Length": str(len(chunk)),
+                    "Upload-Offset": str(offset),
+                }
+
+                resp = requests.patch(
+                    upload_url,
+                    headers=patch_headers,
+                    data=chunk,
+                    timeout=120,
+                )
+
+                if resp.status_code != 204:
+                    sys.stdout.write("\n")
+                    raiseCytoError(
+                        f"TUS chunk upload failed at offset {offset} "
+                        f"(HTTP {resp.status_code}): {resp.text}",
+                        logger,
+                    )
+
+                offset = int(resp.headers.get("Upload-Offset", offset + len(chunk)))
+
+                pct = int(100 * offset / file_size) if file_size else 100
+                sys.stdout.write(
+                    f"\r  Upload: {pct}% "
+                    f"({format_file_size(offset)} / {format_file_size(file_size)})"
+                )
+                sys.stdout.flush()
+
+    except requests.RequestException as e:
+        sys.stdout.write("\n")
+        raiseCytoError(f"TUS upload failed: {e}", logger)
+
+    sys.stdout.write("\n")
+
+    # Step 3: Determine the server path for the import step.
+    # List the user's files directory and look for the file we just uploaded.
+    listing = _list_user_files(api_url, token, "", logger)
+    if listing:
+        base_dir = listing.get("path", "")
+        for entry in listing.get("entries", []):
+            if entry.get("name") == zip_path.stem and entry.get("type") == "D":
+                server_path = f"{base_dir}/{zip_path.stem}"
+                logger.debug(f"TUS upload complete, server path: {server_path}")
+                return {"server_path": server_path}
+
+    raiseCytoError(
+        f"TUS upload completed but '{zip_path.stem}' was not found in user files listing. "
+        "The import step cannot proceed.",
+        logger,
+    )
+
+
 def upload_file(api_url: str, token: str, zip_path: Path, timeout: int = 300, logger: logging.Logger = None) -> dict:
     """
     Upload a zip file to EcoTaxa user's file area.
@@ -273,7 +420,7 @@ def import_file(api_url: str, project_id: int, token: str, server_path: str, log
     Returns:
         Dictionary with 'job_id' if successful, or 'errors' list if failed.
     """
-    logger.info(f"Starting import to project {project_id}...")
+    logger.info(f"  Importing {server_path}")
 
     import_req = {
         "source_path": server_path,
