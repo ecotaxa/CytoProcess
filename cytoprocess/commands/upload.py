@@ -171,7 +171,7 @@ def authenticate(logger: logging.Logger, username: str | None = None, password: 
     if token and _validate_token(logger, token):
         user_info = _get_user_info(logger, token)
         if user_info:
-            logger.info(f"Authenticated as: {user_info.get('name', 'Unknown')} ({user_info.get('email', 'Unknown')})")
+            logger.debug(f"Authenticated as: {user_info.get('name', 'Unknown')} ({user_info.get('email', 'Unknown')})")
         return token
     elif token:
         logger.warning("Stored token is invalid, need to re-authenticate")
