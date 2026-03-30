@@ -43,8 +43,8 @@ def _compute_sample_status(project: Path, sample_id: str, meta_df: pd.DataFrame,
     # global metadata
     this_sample_meta = meta_df[meta_df["sample_id"] == sample_id]
     sample_in_meta = this_sample_meta.shape[0] > 0
+    this_sample_meta = this_sample_meta.drop(columns=["sample_id"])
     sample_meta_filled = sample_in_meta and not this_sample_meta.isnull().all(axis=1).iloc[0]
-    # TODO check whether this actually works
 
     # converted
     json_file = project / path_to_sample_asset(sample_id, "json", logger)
@@ -114,7 +114,7 @@ def _define_sample_progress(sample_status: dict) -> tuple[str, str]:
 
     STATUS_STEPS = [
         ("copy .cyz", lambda s: s["cyz_present"]),
-        ("list", lambda s: s["sample_in_meta"]),
+        ("list", lambda s: s["sample_meta_filled"]),
         ("convert", lambda s: s["json_present"]),
         ("extract_meta", lambda s: s["instrument_data_present"]),
         ("extract_cyto", lambda s: s["cytometric_features_present"]),
