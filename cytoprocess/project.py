@@ -11,7 +11,7 @@ from cytoprocess.utils import raiseCytoError
 
 def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path:
     """
-    Generate the expected file name for a sample of a given kind.
+    Generate the expected path for an asset (file, directory) of a given kind.
 
     Args:
         sample: The sample name (without extension)
@@ -55,11 +55,13 @@ def list_sample_assets(project: Path, kind: str, logger: logging.Logger, ctx: cl
     Returns:
         A list of Path objects for the expected files/directories
     """
-    # Determine directory and extension based on kind
+    # Determine command to run when no asset is present, depending on kind
     if kind == "cyz":
         command = "create"
     elif kind == "json":
         command = "convert"
+    # NB: There may be other kinds here, the same as in path_to_sample_asset,
+    #     but for now we only use this function for cyz and json files
     else:
         raiseCytoError(f"Invalid kind '{kind}'", logger)
 
@@ -93,7 +95,7 @@ def list_samples_in_meta_file(project: Path, logger: logging.Logger) -> list[str
     """
     meta_file = project / "meta" / "samples.csv"
     if not meta_file.exists():
-        logger.warning(f"Metadata file '{meta_file}' does not exist")
+        logger.warning(f"Metadata file '{meta_file}' does not exist, run `cytoprocess list '{project}'` to create it")
         return list()
 
     try:
