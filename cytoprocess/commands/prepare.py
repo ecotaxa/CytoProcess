@@ -238,17 +238,17 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
     type_row = {col: _infer_ecotaxa_type(df[col]) for col in df.columns}
 
     # Duplicate the DataFrame to reference masks and pulse shape images
-    # (they have the same id but are stored as GIF and PNG files)
+    # (they have the same id but are stored as PNG files)
     df_masks = df.copy()
     # Empty all columns that don't start with "img_" or end with "_id"
     for col in df_masks.columns:
         if not col.startswith('img_') and not col.endswith('_id'):
             df_masks[col] = None
-    df_masks['img_file_name'] = df_masks['img_file_name'].str.replace('.jpg', '.gif', regex=False)
+    df_masks['img_file_name'] = df_masks['img_file_name'].str.replace('_img.jpg', '_mask.png', regex=False)
     df_masks['img_rank'] = 1
 
     df_pulses = df_masks.copy()
-    df_pulses['img_file_name'] = df_pulses['img_file_name'].str.replace('.gif', '.png', regex=False)
+    df_pulses['img_file_name'] = df_pulses['img_file_name'].str.replace('_mask.png', '_pulses.png', regex=False)
     df_pulses['img_rank'] = 2
 
     # Combine the two DataFrames
@@ -284,9 +284,9 @@ def _create_ecotaxa_zip(project: Path, sample_id: str, tsv_file: Path, zip_file:
     pulses_dir = project / path_to_sample_asset(sample_id, 'pulses_plots', logger)
     images_dir = project / path_to_sample_asset(sample_id, 'images', logger)
 
-    pulses_files = list(pulses_dir.glob("*.png"))
-    image_files = list(images_dir.glob("*.jpg"))
-    mask_files = list(images_dir.glob("*.gif"))
+    pulses_files = list(pulses_dir.glob("*_pulses.png"))
+    image_files = list(images_dir.glob("*_img.jpg"))
+    mask_files = list(images_dir.glob("*_mask.png"))
 
     all_images = pulses_files + image_files + mask_files
     

@@ -132,7 +132,7 @@ def _process_single_particle(args):
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
         # Save the plot to disk
-        img_path = pulses_img_dir / f"{particle_idx}.png"
+        img_path = pulses_img_dir / f"{particle_idx}_pulses.png"
         plt.savefig(img_path)
         plt.close()
         # Remove the alpha channel from the image to avoid issues with EcoTaxa

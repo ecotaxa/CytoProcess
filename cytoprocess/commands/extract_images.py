@@ -300,13 +300,13 @@ def _process_single_image(image: dict, background_img: np.ndarray,
             return (None, False, f"Could not extract features from particle {particle_id}")
 
         # Write the image and mask from the worker process to avoid large IPC payloads.
-        output_file = images_dir / f"{particle_id}.jpg"
+        output_file = images_dir / f"{particle_id}_img.jpg"
         with open(output_file, 'wb') as img_file:
             iio.imwrite(img_file, img, format='jpg', quality=98)
 
-        output_file = images_dir / f"{particle_id}.gif"
+        output_file = images_dir / f"{particle_id}_mask.png"
         with open(output_file, 'wb') as img_file:
-            iio.imwrite(img_file, (img_mask * 255).astype(np.uint8), format='gif')
+            iio.imwrite(img_file, (img_mask * 255).astype(np.uint8), format='png')
 
         # Create row with identifiers and features
         row = {
