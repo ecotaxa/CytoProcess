@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cytoprocess"
-version = "0.0.3"
+version = "0.0.4"
 requires-python = ">=3.11"
 description = "Package to process images and their features from .cyz files and upload them to EcoTaxa"
 license = {text = "GPL-3.0-or-later"}
