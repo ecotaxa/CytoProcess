@@ -36,17 +36,10 @@ def run(ctx: click.Context, project: Path):
     log_command_start(logger, "Cleaning up intermediate files", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
     
-    # Remove directory containing .json files
-    # (they are large and can be reconverted from .cyz files)
-    converted_dir = Path(project) / "converted"
-    _remove_directory(converted_dir, logger)
-
     # Remove intermediate storage for metadata
     work_dir = Path(project) / "work"
     _remove_directory(work_dir, logger)
 
-    # Remove directory with individual images
-    images_dir = Path(project) / "images"
-    _remove_directory(images_dir, logger)
+    # TODO remove old log files
   
     log_command_success(logger, "Cleanup")
