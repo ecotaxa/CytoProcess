@@ -196,7 +196,7 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
     sample_id = df["sample_id"].iloc[0]
     
     # Add image filename based on object_id (this is the actual image)
-    df['img_file_name'] = df['object_id'].str.replace(f"{sample_id}_", "", n=1) + ".jpg"
+    df['img_file_name'] = df['object_id'].str.replace(f"{sample_id}_", "", n=1) + "_img.jpg"
     
     # Add img_rank (0-based index for multiple images per object)
     df['img_rank'] = 0
