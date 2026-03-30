@@ -9,6 +9,32 @@ import pandas as pd
 from cytoprocess.utils import raiseCytoError
 
 
+def check_project_integrity(project: Path, logger: logging.Logger) -> bool:
+    """
+    Check if the project directory has the expected structure and files.
+
+    Args:
+        project: The project directory path
+        logger: The logger instance to use for logging
+    Returns:
+        True if the project structure looks correct, False otherwise.
+    """
+    expected_dirs = ["raw", "meta", "config"]
+    for d in expected_dirs:
+        if not (project / d).exists():
+            raiseCytoError(f"Expected directory '{d}' is missing in '{project}'", logger)
+            return False
+
+    config_file = project / "config" / "config.yaml"
+    if not config_file.exists():
+        raiseCytoError(f"Configuration file '{config_file}' does not exist", logger)
+        return False
+
+    logger.debug(f"Project '{project}' passed integrity check")
+    return True
+# TODO use this in other commands that access the project structure, to fail early with a clear error message if the structure is not correct
+
+
 def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path:
     """
     Generate the expected path for an asset (file, directory) of a given kind.
@@ -122,26 +148,30 @@ def list_samples(project: Path, sample_filter: str | None, logger: logging.Logge
         optionally filtered by sample_filter.
     """
 
+    # Check that the project structure looks correct before trying to list samples, to avoid confusing errors later on
+    check_project_integrity(project, logger)
+
     sample_ids: set[str] = set()
 
-    raw_dir = project / "raw"
-    if raw_dir.exists():
-        sample_ids.update([f.stem for f in list_sample_assets(project, "cyz", logger)])
+    # in raw
+    sample_ids.update([f.stem for f in list_sample_assets(project, "cyz", logger)])
 
+    # in meta/samples.csv
+    sample_ids.update(list_samples_in_meta_file(project, logger))
+
+    # in work
     work_dir = project / "work"
     if work_dir.exists():
         sample_ids.update([d.name for d in work_dir.iterdir() if d.is_dir()])
 
-    sample_ids.update(list_samples_in_meta_file(project, logger))
-
     samples = sorted(sample_ids)
     if not samples:
-        logger.warning("No samples found in raw/, work/, or meta/samples.csv")
+        logger.warning("No samples found in raw/, work/, and meta/samples.csv")
 
     logger.debug(f"Found {len(samples)} sample(s)")
 
+    # Filter by sample_filter if provided
     if sample_filter:
-        logger.info(f"Checking status for sample: '{sample_filter}'")
         return [sample_filter]
 
     return samples
