@@ -14,8 +14,17 @@ from cytoprocess.utils import raiseCytoError
 
 def _get_or_create_bin_dir() -> Path:
     """Get (and create if necessary) the directory for storing executables."""
-    bin_dir = Path.home() / ".bin"
-    # TODO find a more idiomatic location of Windows (e.g. %APPDATA%/cyz2json or something like that) and use that on Windows instead of ~/.bin
+    if platform.system() == "Windows":
+        # Prefer a per-user application data location on Windows
+        appdata_root = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
+        if appdata_root:
+            bin_dir = Path(appdata_root) / "Cyz2Json" / "bin"
+        else:
+            # Fallback if env vars are unavailable
+            bin_dir = Path.home() / "AppData" / "Local" / "Cyz2Json" / "bin"
+    else:
+        # For Unix-like systems, use ~/.bin
+        bin_dir = Path.home() / ".bin"
 
     # create the directory if it doesn't exist
     bin_dir.mkdir(parents=True, exist_ok=True)
