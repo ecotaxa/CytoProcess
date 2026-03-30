@@ -9,9 +9,7 @@ import zipfile
 from pathlib import Path
 import click
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success
-from cytoprocess.utils import (
-    raiseCytoError
-)
+from cytoprocess.utils import raiseCytoError
 
 
 def _get_or_create_bin_dir() -> Path:
