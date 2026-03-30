@@ -282,14 +282,14 @@ def _create_ecotaxa_zip(project: Path, sample_id: str, tsv_file: Path, zip_file:
     """
 
     # List images to include in the zip file
-    pulses_dir = project / path_to_sample_asset(sample_id, 'pulses_plots', logger)
     images_dir = project / path_to_sample_asset(sample_id, 'images', logger)
+    pulses_dir = project / path_to_sample_asset(sample_id, 'pulses_plots', logger)
 
-    pulses_files = list(pulses_dir.glob("*_pulses.png"))
     image_files = list(images_dir.glob("*_img.jpg"))
     mask_files = list(images_dir.glob("*_mask.png"))
+    pulses_files = list(pulses_dir.glob("*_pulses.png"))
 
-    all_images = pulses_files + image_files + mask_files
+    all_images = image_files + mask_files + pulses_files
     
     logger.debug(f"Creating zip file '{zip_file}'")
     with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
