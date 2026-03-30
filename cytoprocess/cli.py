@@ -175,6 +175,15 @@ def all(ctx, project, force, n_poly, max_cores):
     logger.info("All processing steps completed successfully")
 
 
+@cli.command(name="status")
+@click.argument("project", type=click.Path(exists=True))
+@click.pass_context
+def status(ctx, project):
+    """Show per-sample processing status."""
+    from cytoprocess.commands import status
+    status.run(ctx, project=Path(project))
+
+
 @cli.command(name="clean")
 @click.argument("project", type=click.Path(exists=True))
 @click.pass_context
