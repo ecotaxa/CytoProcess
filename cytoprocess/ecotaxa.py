@@ -366,7 +366,7 @@ def upload_file_tus(
     )
 
 
-def import_file(api_url: str, project_id: int, token: str, server_path: str, logger: logging.Logger) -> dict:
+def import_file(api_url: str, project_id: int, token: str, server_path: str, update_mode: str = "", logger: logging.Logger = None) -> dict:
     """
     Start an import job for a file already uploaded to EcoTaxa.
 
@@ -376,6 +376,7 @@ def import_file(api_url: str, project_id: int, token: str, server_path: str, log
         token: JWT authentication token
         server_path: Path to the file on EcoTaxa server (from upload_file)
         logger: Logger instance
+        update_mode: Update mode for the import ('Yes' to update data, 'Cla' to also update classification)
 
     Returns:
         Dictionary with 'job_id' if successful, or 'errors' list if failed.
@@ -386,7 +387,7 @@ def import_file(api_url: str, project_id: int, token: str, server_path: str, log
         "source_path": server_path,
         "skip_loaded_files": False,
         "skip_existing_objects": False,
-        "update_mode": "",
+        "update_mode": update_mode,
     }
 
     try:
