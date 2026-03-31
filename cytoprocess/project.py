@@ -86,8 +86,10 @@ def list_sample_assets(project: Path, kind: str, logger: logging.Logger, samples
         command = "create"
     elif kind == "json":
         command = "convert"
-    elif kind == "zip" or kind == "tsv":
+    elif kind == "zip":
         command = "prepare"
+    elif kind == "tsv":
+        command = "prepare --only-tsv"
     # NB: There may be other kinds here, the same as in path_to_sample_asset,
     #     but for now we only use this function for cyz and json files
     else:
