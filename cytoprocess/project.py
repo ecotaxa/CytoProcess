@@ -64,6 +64,8 @@ def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path
         return f"ecotaxa/{sample}.zip"
     elif kind == "tsv":
         return f"ecotaxa/ecotaxa_{sample}.tsv"
+    elif kind == "dir":
+        return f"work/{sample}"
     else:
         raiseCytoError(f"Invalid kind '{kind}'", logger)
 
@@ -86,6 +88,8 @@ def list_sample_assets(project: Path, kind: str, logger: logging.Logger, samples
         command = "create"
     elif kind == "json":
         command = "convert"
+    elif kind == "dir":
+        command = "convert"
     elif kind == "zip":
         command = "prepare"
     elif kind == "tsv":
@@ -105,10 +109,12 @@ def list_sample_assets(project: Path, kind: str, logger: logging.Logger, samples
     assets = sorted(list(project.glob(path_to_sample_asset(samples_mask, kind, logger))))
     if len(assets) == 0:
         if all_samples:
-            logger.warning(f"No {kind} files found in '{project}'\nRun `cytoprocess {command} '{project}'`")
+            logger.warning(f"No {kind} found in '{project}'\nRun `cytoprocess {command} '{project}'`")
         else:
-            logger.warning(f"No {kind} files matching '{samples_mask}' found in '{project}'\nRun `cytoprocess --sample '{samples_mask}' {command} '{project}'`")
+            logger.warning(f"No {kind} matching '{samples_mask}' found in '{project}'\nRun `cytoprocess --sample '{samples_mask}' {command} '{project}'`")
         return []
+    if kind == "dir":
+        assets = [a for a in assets if a.is_dir()]
     logger.debug(f"Found {len(assets)} {kind} files in '{project}'")
     return assets
 
@@ -165,9 +171,7 @@ def list_samples(project: Path, logger: logging.Logger, samples_mask: str | None
     sample_ids.update(list_samples_in_meta_file(project, logger))
 
     # in work
-    work_dir = project / "work"
-    if work_dir.exists():
-        sample_ids.update([d.name for d in work_dir.iterdir() if d.is_dir()])
+    sample_ids.update([d.name for d in list_sample_assets(project, "dir", logger)])
 
     samples = sorted(sample_ids)
     if not samples:
