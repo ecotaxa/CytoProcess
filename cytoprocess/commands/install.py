@@ -3,6 +3,7 @@ import os
 import shutil
 import platform
 import urllib.request
+import subprocess
 import json
 import tempfile
 import zipfile
@@ -164,9 +165,10 @@ def run(ctx: click.Context, force: bool = False):
     log_command_start(logger, "Installing cyz2json", project=None)
     try:
         path = _check_or_get_cyz2json(force=force, logger=logger)
-        # result = subprocess.run([path, '--version'], check=True, capture_output=True, text=True)
-        # logger.info(f"cyz2json available at {path}, at version {result.stdout.strip()}")
-        logger.info(f"cyz2json available at {path}")
+        path = Path("~/.bin/Cyz2Json").expanduser()
+        result = subprocess.run([path, '--version'], check=True, capture_output=True, text=True)
+        cyz2json_version = result.stdout.strip().removeprefix('Cyz2Json-')
+        logger.info(f"cyz2json installed at {path}, at version {cyz2json_version}")
     except Exception as e:
         raiseCytoError(f"Failed to install cyz2json: {e}", logger)
         raise
