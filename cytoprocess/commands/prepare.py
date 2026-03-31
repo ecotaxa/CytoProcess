@@ -27,43 +27,25 @@ def _infer_ecotaxa_type(series: pd.Series) -> str:
         return '[t]'
 
 
-def _list_samples(project: Path, sample_filter: str | None, logger: logging.Logger) -> tuple[pd.DataFrame, list[str]]:
+def _warn_about_extra_samples(project: Path, samples: list[str], logger: logging.Logger) -> None:
     """
-    List samples to process from meta/samples.csv and optionally filter by sample_id.
+    List samples in raw that are not included in the provided sample list, and log a warning if any are found.
     
     Args:
         project: Path to project directory
-        sample_filter: Optional sample_id to filter to a single sample, from --sample
+        samples: List of existing sample ids
         logger: Logger instance
         
     Returns:
         List of sample_ids to process
     """
-
-    # List directories in work/ and consider them as sample_ids
-    # (we will check later if they contain the required files)
-    work_dir = project / "work"
-    samples = [d.name for d in work_dir.iterdir() if d.is_dir()]
-
-    if sample_filter:
-        if sample_filter not in samples:
-            raiseCytoError(f"Sample '{sample_filter}' not found in '{samples}'.", logger)
-        samples = [sample_filter]
-        logger.info(f"Preparing EcoTaxa file for sample: '{sample_filter}'")
-    
-    else:
-        logger.info(f"Preparing EcoTaxa file for {len(samples)} sample(s)")
-
-        # Compare the list with raw files
-        avail_raw_files = list_sample_assets(project, kind="cyz", logger=logger)
-        used_raw_files = [project / path_to_sample_asset(s, kind="cyz", logger=logger) for s in samples]
-        extra_raw_files = set(avail_raw_files) - set(used_raw_files)
-        if len(extra_raw_files) == 1:
-            logger.warning(f"Found one unprocessed .cyz file':\n{(str(list(extra_raw_files)[0]))}\nTo include it, re-run `cytoprocess list {project}`, fill in the metadata for this sample, run all processing steps, and then re-run `cytoprocess prepare {project}`.")
-        elif len(extra_raw_files) > 1:
-            logger.warning(f"Found {len(extra_raw_files)} unprocessed .cyz files':\n{sorted(str(f) for f in extra_raw_files)}\nTo include them, re-run `cytoprocess list {project}`, fill in the metadata for these samples, run all processing steps, and then re-run `cytoprocess prepare {project}`.")
-    
-    return samples
+    avail_raw_files = list_sample_assets(project, kind="cyz", logger=logger)
+    used_raw_files = [project / path_to_sample_asset(s, kind="cyz", logger=logger) for s in samples]
+    extra_raw_files = set(avail_raw_files) - set(used_raw_files)
+    if len(extra_raw_files) == 1:
+        logger.warning(f"Found one unprocessed .cyz file':\n{(str(list(extra_raw_files)[0]))}\nTo include it, re-run `cytoprocess list {project}`, fill in the metadata for this sample, run all processing steps, and then re-run `cytoprocess prepare {project}`.")
+    elif len(extra_raw_files) > 1:
+        logger.warning(f"Found {len(extra_raw_files)} unprocessed .cyz files':\n{sorted(str(f) for f in extra_raw_files)}\nTo include them, re-run `cytoprocess list {project}`, fill in the metadata for these samples, run all processing steps, and then re-run `cytoprocess prepare {project}`.")
 
 
 def _ensure_complete_samples(project: Path, samples: list[str], logger: logging.Logger) -> None:
@@ -305,25 +287,27 @@ def _create_ecotaxa_zip(project: Path, sample_id: str, tsv_file: Path, zip_file:
     tsv_file.unlink()
 
 
-def run(ctx: click.Context, project: Path, force=False, only_tsv=False):
+def run(ctx: click.Context, project: Path, force=False):
     # Housekeeping for the command
     logger = setup_logging(command="prepare", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Preparing EcoTaxa files", project)
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
     if force:
         logger.debug("Force flag enabled, existing ecotaxa files will be overwritten")
-    if only_tsv:
-        logger.debug("only-tsv flag enabled: only creating TSV files, not ZIP files with images")
 
 
-    sample_filter = getattr(ctx, "obj", {}).get("sample")
+    # List samples in work, filtered by --sample if provided
+    samples_mask = ctx.obj["sample"]
+    sample_ids = [d.name for d in list_sample_assets(project, "dir", logger, samples_mask=samples_mask)]
 
-    # List samples to process from meta/samples.csv
-    # (limit to the sample specified by --sample if provided)
-    samples = _list_samples(project, sample_filter, logger)        
+    logger.info(f"Preparing EcoTaxa file for {len(sample_ids)} sample(s)")
+
+    # If we are not filtering samples, detect extra ones in raw and warn the user
+    if samples_mask == None:
+        _warn_about_extra_samples(project, sample_ids, logger)
 
     # Check that all required input data/files exist for the target sample(s)
-    _ensure_complete_samples(project, samples, logger)
+    _ensure_complete_samples(project, sample_ids, logger)
 
     # Prepare storage
     ecotaxa_dir = project / "ecotaxa"
@@ -333,16 +317,15 @@ def run(ctx: click.Context, project: Path, force=False, only_tsv=False):
     # to merge it below with the sample-level information
     samples_meta_df = pd.read_csv(project / "meta" / "samples.csv")
 
-    for sample_id in samples:
+    for sample_id in sample_ids:
         logger.info(f"'{sample_id}'")
 
-        tsv_file = project / path_to_sample_asset(sample_id, 'tsv', logger)
         zip_file = project / path_to_sample_asset(sample_id, 'zip', logger)
+        tsv_file = project / path_to_sample_asset(sample_id, 'tsv', logger)
 
         # Skip if output file exists and force is not set
-        if (tsv_file.exists() and only_tsv and not force) or \
-           (zip_file.exists() and not only_tsv and not force):
-            logger.info(f"  Skipping, ecotaxa_*." + ("tsv" if only_tsv else "zip") + " file already exists (use --force to overwrite)")
+        if (zip_file.exists() and not force):
+            logger.info(f"  Skipping, {zip_file} file already exists (use --force to overwrite)")
             continue
         
         logger.info(f"  Collating '{tsv_file}'")
@@ -357,11 +340,6 @@ def run(ctx: click.Context, project: Path, force=False, only_tsv=False):
         # Prepare TSV file
         _prepare_ecotaxa_tsv(df, tsv_file, logger)
         
-        if only_tsv:
-            logger.debug("Skipping zip creation, only TSV file requested (--only-tsv)")
-            continue
-        # TODO if only_tsv is used, still create the zip file but only add the tsv inside, updating it if need be. Then we will use upload --force to upload only the tsv to EcoTaxa without re-uploading the images. This is for users who want to update only the metadata after the initial upload, without having to re-upload the images which can be time consuming.
-
         # Create zip file
         logger.info(f"  Assembling '{zip_file}'")
         _create_ecotaxa_zip(project, sample_id, tsv_file, zip_file, logger)

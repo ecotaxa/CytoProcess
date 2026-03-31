@@ -120,12 +120,11 @@ def extract_images(ctx, project, force, max_cores):
 @cli.command(name="prepare")
 @click.argument("project", type=click.Path(exists=True))
 @click.option("--force", "-f", is_flag=True, default=False, help="Force preparation even if output files already exist.")
-@click.option("--only-tsv", "-t", is_flag=True, default=False, help="Only create TSV files, skip zip file creation (useful to update metadata only).")
 @click.pass_context
-def prepare(ctx, project, force, only_tsv):
+def prepare(ctx, project, force):
     """Prepare .tsv and images for EcoTaxa."""
     from cytoprocess.commands import prepare
-    prepare.run(ctx, project=Path(project), force=force, only_tsv=only_tsv)
+    prepare.run(ctx, project=Path(project), force=force)
 
 
 @cli.command(name="upload")
