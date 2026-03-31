@@ -43,6 +43,8 @@ CytoProcess uses the concept of "project". A project corresponds conceptually to
 
 Each .cyz file is considered as a "sample" (and will correspond to an EcoTaxa sample).
 
+A project is organised like so
+
 ```
 my_project/
     config      configuration files
@@ -94,13 +96,15 @@ Then copy/move the .cyz files that are relevant for this project in `my_project/
 
 ### Processing samples in a project
 
-List available raw samples and create the `meta/samples.csv` file
+List available raw samples and create the `meta/samples.csv` file with
 
 ```bash
 cytoprocess list path/to/my_project
 ```
 
-Manually enter the required metadata (such as lon, lat, etc.) in the .csv file. You can add or remove columns as you see fit, you can use the option `--extra-fields` to change the default column added. The conventions follow those of EcoTaxa. Then performs all processing steps, for all samples, with default options 
+Manually enter the required metadata (such as lon, lat, etc.) in the .csv file. You can add or remove columns as you see fit, you can use the option `--extra-fields` (or `-e`) to change the default columns added. The conventions follow those of EcoTaxa.
+
+Then, perform all processing steps, for all samples, with default options 
 
 ```bash
 cytoprocess all path/to/my_project
@@ -137,25 +141,39 @@ cytoprocess status path/to/project
 
 ### Customisation
 
-To process a single sample, use
+To process a subset of samples, use
 
 ```bash
 cytoprocess --sample 'name_of_cyz_file' command path/to/project
 ```
+which processes this single sample. Or
+```bash
+cytoprocess --sample '*foo*' command path/to/project
+```
+which process all samples whose name contains foo.
 
 All commands will skip the processing of a given sample if the output is already present. To re-process and overwrite, use the `--force` option.
 
-For metadata and cytometric features extraction (`extract_meta` and `extract_cyto`), information from the json file needs to be curated and translated into EcoTaxa metadata columns. This is defined in the configuration file, by `key: value` pairs of the form `json.fields.item.name: ecotaxa_name`. To get the list of possible json fields, use the `--list` option for `extract_meta` or `extract_cyto`; it will write a text file in `config` with all possibilities. You can then copy-paste them to `config/config.yaml`.
+For metadata and cytometric features extraction (`extract_meta` and `extract_cyto`), information from the json file needs to be curated and translated into EcoTaxa metadata columns. This is defined in the configuration file `my_project/config/config.yaml`. It contains `key: value` pairs of the form `json.fields.item.name: ecotaxa_name`. To get the list of possible json fields, use the `--list` (or `-l`) option for `extract_meta` or `extract_cyto`; it will write a text file in `config` with all possibilities. You can then copy-paste them to `config/config.yaml`.
 
-Even with all these fields available, the CytoSense may not record relevant metadata such as latitude, longitude, and date of each sample, which EcoTaxa needs to filter the data or export it to other data bases. You should provide such fields manually by editing the `meta/samples.csv` file.
+Even with all these fields available, the CytoSense does not record some relevant metadata such as latitude, longitude, and date of collection of each sample, which EcoTaxa needs to filter the data or export it to other data bases. You should provide such fields manually by editing the `meta/samples.csv` file.
+
+If you change this metadata or the mapping of fields in `config.yaml` and want to reimport the modified .tsv files on EcoTaxa, you can do so with
+
+```bash
+# re-generate the .tsv files with the corrected metadata
+cytoprocess prepare --force path/to/project
+# re-upload the .tsv only and use "Update metadata" mode
+cytoprocess upload --update path/to/project
+```
 
 
 ### Cleaning up after processing
 
-Because everything is stored in the EcoTaxa files and can be re-generated from the .cyz files, you may want to remove the intermediate files, in work, as well as old log files, to reclaim disk space. This is done with
+Because everything is stored in the EcoTaxa .zip files and can be re-generated from the .cyz files, you may want to remove the intermediate files, in work, as well as old log files, to reclaim disk space. For example, to remove intermediate files and log files older than 20 days
 
 ```bash
-cytoprocess clean path/to/project
+cytoprocess clean --older-than 20 path/to/project
 ```
 
 ## Development
