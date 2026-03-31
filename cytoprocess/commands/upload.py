@@ -1,12 +1,14 @@
 import tempfile
 import zipfile
 from pathlib import Path
+
 import click
 import yaml
+
 from cytoprocess import ecotaxa
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 from cytoprocess.project import check_project_integrity, list_sample_assets
-from cytoprocess.utils import raiseCytoError, format_file_size
+from cytoprocess.utils import format_file_size, raiseCytoError
 
 
 def _extract_tsv_in_new_zip(zip_path: Path, logger) -> Path | None:

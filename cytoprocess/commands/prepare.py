@@ -1,13 +1,13 @@
 import logging
-import click
-import pandas as pd
 import zipfile
 from pathlib import Path
+
+import click
+import pandas as pd
+
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 from cytoprocess.project import list_sample_assets, path_to_sample_asset
-from cytoprocess.utils import (
-    raiseCytoError
-)
+from cytoprocess.utils import raiseCytoError
 
 
 def _infer_ecotaxa_type(series: pd.Series) -> str:

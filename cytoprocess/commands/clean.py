@@ -1,10 +1,12 @@
 import logging
 import shutil
-import click
+from datetime import date, datetime, timedelta
 from pathlib import Path
+
+import click
+
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 from cytoprocess.utils import raiseCytoError
-from datetime import datetime, date, timedelta
 
 def _remove_directory(directory: Path, logger: logging.Logger) -> bool:
     """Remove a directory and all its contents.

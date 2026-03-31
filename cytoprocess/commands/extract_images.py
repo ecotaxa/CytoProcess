@@ -1,22 +1,21 @@
 import base64
-import click
-from pathlib import Path
-import shutil
 import logging
 import os
-from multiprocessing import Pool
+import shutil
 from functools import partial
-from cytoprocess.logging import setup_logging, log_command_start, log_command_success
-from cytoprocess.project import list_sample_assets, path_to_sample_asset
-from cytoprocess.utils import (
-    get_json_section,
-    raiseCytoError
-)
+from multiprocessing import Pool
+from pathlib import Path
+
+import click
 import imageio as iio
-from skimage import morphology, measure
-from scipy import ndimage
 import numpy as np
 import pandas as pd
+from scipy import ndimage
+from skimage import measure, morphology
+
+from cytoprocess.logging import setup_logging, log_command_start, log_command_success
+from cytoprocess.project import list_sample_assets, path_to_sample_asset
+from cytoprocess.utils import get_json_section, raiseCytoError
 
 
 def _rescale_pixel_values(img: np.ndarray) -> np.ndarray:

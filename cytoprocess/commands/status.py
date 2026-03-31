@@ -1,10 +1,10 @@
-from pathlib import Path
 import logging
-import yaml
+from pathlib import Path
 
+import click
 import pandas as pd
 import pyarrow.parquet as pq
-import click
+import yaml
 
 from cytoprocess import ecotaxa
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success

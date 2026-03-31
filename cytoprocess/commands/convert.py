@@ -1,10 +1,12 @@
 import subprocess
 from pathlib import Path
+
 import click
-from cytoprocess.logging import setup_logging, log_command_success, log_command_start
+
+from cytoprocess.commands import install
+from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 from cytoprocess.project import list_sample_assets, path_to_sample_asset
 from cytoprocess.utils import raiseCytoError
-from cytoprocess.commands import install
 
 
 def run(ctx: click.Context, project: Path, force=False):

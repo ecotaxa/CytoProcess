@@ -1,14 +1,16 @@
+import json
 import logging
 import os
-import shutil
 import platform
-import urllib.request
+import shutil
 import subprocess
-import json
 import tempfile
+import urllib.request
 import zipfile
 from pathlib import Path
+
 import click
+
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 from cytoprocess.utils import raiseCytoError
 

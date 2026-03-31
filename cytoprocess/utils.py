@@ -1,10 +1,11 @@
 """Utility functions for cytoprocess."""
 
 import logging
+import math
+from pathlib import Path
+
 import click
 import ijson
-from pathlib import Path
-import math
 import yaml
 
 

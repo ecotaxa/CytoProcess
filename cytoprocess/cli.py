@@ -4,8 +4,10 @@
 # This consists of a main command (cytoprocess) with subcommands for each processing step.
 #
 
-import click
 from pathlib import Path
+
+import click
+
 from cytoprocess.logging import setup_logging
 
 # List commands in the order they appear in this file

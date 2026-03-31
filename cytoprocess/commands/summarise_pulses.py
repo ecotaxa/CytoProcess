@@ -1,17 +1,12 @@
+import os
+from multiprocessing import Pool
 from pathlib import Path
+
 import click
+import imageio as iio
 import numpy as np
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
-from cytoprocess.logging import setup_logging, log_command_start, log_command_success
-from cytoprocess.project import list_sample_assets, path_to_sample_asset
-from cytoprocess.utils import (
-    get_json_section,
-    raiseCytoError
-)
-import imageio as iio
-import os
-from multiprocessing import Pool
 import matplotlib
 # Use non-interactive backend for plotting (no display needed)
 matplotlib.use("Agg")
@@ -20,6 +15,10 @@ import matplotlib.pyplot as plt
 plt.rcParams["figure.figsize"] = 4, 3
 plt.rcParams["figure.autolayout"] = True
 plt.rcParams["font.size"] = 6
+
+from cytoprocess.logging import setup_logging, log_command_start, log_command_success
+from cytoprocess.project import list_sample_assets, path_to_sample_asset
+from cytoprocess.utils import get_json_section, raiseCytoError
 
 
 def _normalise_pulse(values: list) -> np.ndarray:

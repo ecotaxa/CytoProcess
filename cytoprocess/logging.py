@@ -1,10 +1,10 @@
 """Logging helpers for cytoprocess commands."""
 
 import copy
-from datetime import datetime
 import logging
-from pathlib import Path
 import re
+from datetime import datetime
+from pathlib import Path
 
 
 def setup_logging(command: str = None, project: Path = None, debug: bool = False) -> logging.Logger:
