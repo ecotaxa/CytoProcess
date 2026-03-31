@@ -191,7 +191,7 @@ def status(ctx, project, width):
 
 @cli.command(name="clean")
 @click.argument("project", type=click.Path(exists=True))
-@click.option("--older-than", "-o", default=30, type=int, help="Remove log files older than this many days.")
+@click.option("--older-than", "-o", default=None, type=int, help="Remove log files older than this many days (by default, do not remove anything).")
 @click.pass_context
 def clean(ctx, project, older_than):
     """Remove intermediate files in the project."""

@@ -32,7 +32,7 @@ def _remove_directory(directory: Path, logger: logging.Logger) -> bool:
         raiseCytoError(f"Error removing directory: {e}", logger)
 
 
-def run(ctx: click.Context, project: Path, older_than: int = 30):
+def run(ctx: click.Context, project: Path, older_than: int = None):
     # Housekeeping for the command
     logger = setup_logging(command="cleanup", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Cleaning up intermediate files", project)
@@ -44,7 +44,7 @@ def run(ctx: click.Context, project: Path, older_than: int = 30):
 
     # Remove old log files
     log_dir = project / "logs"
-    if log_dir.exists():
+    if log_dir.exists() and older_than is not None:
         cutoff_date = date.today() - timedelta(days=older_than)
         
         nb_removed = 0
