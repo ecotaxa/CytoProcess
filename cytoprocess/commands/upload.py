@@ -141,5 +141,5 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
         else:
             logger.warning(f"  ✗ Import failed or requires manual intervention")
 
-    logger.info(f"Your data is at https://ecotaxa.obs-vlfr.fr/prj/{project_id}")
+    logger.info(f"Your data is at {eco_url}/prj/{project_id}")
     log_command_success(logger, "Upload")
