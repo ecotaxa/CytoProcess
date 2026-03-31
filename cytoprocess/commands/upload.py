@@ -37,7 +37,8 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
         raiseCytoError("Authentication failed, cannot proceed with upload", logger)
     
     # Find zip files to upload
-    zip_files = list_sample_assets(project, "zip", logger, ctx)
+    zip_files = list_sample_assets(project, kind="zip",
+                                   logger=logger, samples_mask=ctx.obj["sample"])
     if not zip_files:
         # list_sample_assets already logs a warning if no files are found, so we just stop here
         raiseCytoError(f"Stopping", logger)

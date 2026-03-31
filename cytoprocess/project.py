@@ -3,7 +3,6 @@
 import logging
 from pathlib import Path
 
-import click
 import pandas as pd
 
 from cytoprocess.utils import raiseCytoError
@@ -69,16 +68,15 @@ def path_to_sample_asset(sample: str, kind: str, logger: logging.Logger) -> Path
         raiseCytoError(f"Invalid kind '{kind}'", logger)
 
 
-def list_sample_assets(project: Path, kind: str, logger: logging.Logger, ctx: click.Context = None) -> list:
+def list_sample_assets(project: Path, kind: str, logger: logging.Logger, samples_mask: str | None = None) -> list:
     """
     List all expected asset files for a given sample.
 
     Args:
         project: The project directory path
-        sample: The sample name (without extension)
         kind: The type of file/directory to retrieve
         logger: The logger instance to use for logging
-        ctx: The Click context object, used to get the sample name when called from a command with a --sample option
+        samples_mask: Optional sample name to filter by, including glob patterns
 
     Returns:
         A list of Path objects for the expected files/directories
@@ -95,21 +93,22 @@ def list_sample_assets(project: Path, kind: str, logger: logging.Logger, ctx: cl
     else:
         raiseCytoError(f"Invalid kind '{kind}'", logger)
 
-    sample = getattr(ctx, "obj", {}).get("sample")
-    if sample:
-        asset = project / path_to_sample_asset(sample, kind, logger)
-        if not asset.exists():
-            logger.warning(f"No {kind} file found for sample '{sample}'\nRun `cytoprocess --sample '{sample}' {command} '{project}'`")
-            return []
-        logger.debug(f"Found {kind} file for sample '{sample}': '{asset}'")
-        return [asset]
-    else:
-        assets = sorted(list(project.glob(path_to_sample_asset("*", kind, logger))))
-        if len(assets) == 0:
+    # Define the samples mask
+    all_samples = False
+    if not samples_mask:
+        samples_mask = "*"
+        all_samples = True
+
+    # List assets from all matching samples
+    assets = sorted(list(project.glob(path_to_sample_asset(samples_mask, kind, logger))))
+    if len(assets) == 0:
+        if all_samples:
             logger.warning(f"No {kind} files found in '{project}'\nRun `cytoprocess {command} '{project}'`")
-            return []
-        logger.debug(f"Found {len(assets)} {kind} files in '{project}'")
-        return assets
+        else:
+            logger.warning(f"No {kind} files matching '{samples_mask}' found in '{project}'\nRun `cytoprocess --sample '{samples_mask}' {command} '{project}'`")
+        return []
+    logger.debug(f"Found {len(assets)} {kind} files in '{project}'")
+    return assets
 
 
 def list_samples_in_meta_file(project: Path, logger: logging.Logger) -> list[str]:
@@ -138,14 +137,14 @@ def list_samples_in_meta_file(project: Path, logger: logging.Logger) -> list[str
         return list()
 
 
-def list_samples(project: Path, sample_filter: str | None, logger: logging.Logger) -> list[str]:
+def list_samples(project: Path, logger: logging.Logger, samples_mask: str | None = None) -> list[str]:
     """
     Collect known sample IDs from raw, work, and meta.
 
     Args:
         project: The project directory path
-        sample_filter: Optional sample name to filter by
         logger: The logger instance to use for logging
+        samples_mask: Optional sample name to filter by
 
     Returns:
         A sorted list of unique sample IDs found in the project,
@@ -174,8 +173,8 @@ def list_samples(project: Path, sample_filter: str | None, logger: logging.Logge
 
     logger.debug(f"Found {len(samples)} sample(s)")
 
-    # Filter by sample_filter if provided
-    if sample_filter:
-        return [sample_filter]
+    # Filter by samples_mask if provided
+    if samples_mask:
+        return [ s for s in samples if Path(s).match(samples_mask) ]
 
     return samples

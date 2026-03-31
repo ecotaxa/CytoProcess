@@ -157,8 +157,7 @@ def run(ctx: click.Context, project: Path, width: int = 40):
     logger.debug("Context: %s", getattr(ctx, "obj", {}))
 
     # List all samples, everywhere
-    sample_filter = getattr(ctx, "obj", {}).get("sample")
-    samples = list_samples(project, sample_filter, logger)
+    samples = list_samples(project, logger, samples_mask=ctx.obj["sample"])
     logger.info(f"{len(samples)} sample(s) found")
 
 

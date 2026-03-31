@@ -35,7 +35,8 @@ def run(ctx: click.Context, project: Path, force=False):
 
 
     # Get .cyz files from raw directory
-    cyz_files = list_sample_assets(project, kind="cyz", logger=logger, ctx=ctx)
+    cyz_files = list_sample_assets(project, kind="cyz",
+                                   logger=logger, samples_mask=ctx.obj["sample"])
     if not cyz_files:
         logger.warning(f"Then copy/move cyz files to '{project}/raw'")
         return

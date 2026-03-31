@@ -16,7 +16,7 @@ class NaturalOrderGroup(click.Group):
 
 @click.group(cls=NaturalOrderGroup)
 @click.option("--debug", "-d", is_flag=True, default=False, help="Show debugging messages.")
-@click.option("--sample", "-s", default=None, help="Limit processing to a single sample, specified by the (quoted) name of the .cyz file.")
+@click.option("--sample", "-s", default=None, help="Limit processing to the sample(s) matching the given string, including globing patterns (e.g. 'sample_123' to process only the sample called exactly that or '*2025* to process all samples with '2025' in their name).")
 @click.pass_context
 def cli(ctx, debug, sample):
     """CytoProcess command line interface"""
@@ -29,7 +29,6 @@ def cli(ctx, debug, sample):
         sample_path = Path(sample)
         sample = sample_path.stem
     ctx.obj["sample"] = sample
-    # TODO add a global mask option to process all samples that match the mask (e.g. "sample1_*" to process all samples that start with "sample1_")
 
 
 @cli.command(name="install")

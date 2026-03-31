@@ -341,7 +341,8 @@ def run(ctx: click.Context, project: Path, force=False, max_cores=None):
 
 
     # Get JSON files from converted directory
-    json_files = list_sample_assets(project, kind="json", logger=logger, ctx=ctx)
+    json_files = list_sample_assets(project, kind="json",
+                                    logger=logger, samples_mask=ctx.obj["sample"])
     if not json_files:
         return   
     logger.info(f"Processing {len(json_files)} .json file(s)")

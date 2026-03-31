@@ -16,7 +16,8 @@ def run(ctx: click.Context, project: Path, extra_fields=DEFAULT_EXTRA_FIELDS):
 
 
     # List raw files
-    raw_files = list_sample_assets(project, kind='cyz', logger=logger, ctx=ctx)
+    raw_files = list_sample_assets(project, kind="cyz",
+                                   logger=logger, samples_mask=ctx.obj["sample"])
 
 
     # If there are none, warn and exit
