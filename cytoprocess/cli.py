@@ -146,7 +146,7 @@ def upload(ctx, project, username, password):
 @click.option("--max-cores", "-m", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing.")
 @click.pass_context
 def all(ctx, project, force, n_poly, max_cores):
-    """Run all processing steps in sequence."""
+    """Run all steps from convert to upload in sequence."""
     from cytoprocess.commands import (
         convert,
         extract_meta,
