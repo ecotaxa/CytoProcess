@@ -131,11 +131,12 @@ def prepare(ctx, project, force):
 @click.argument("project", type=click.Path(exists=True))
 @click.option("--username", "-u", help="EcoTaxa email address.")
 @click.option("--password", "-p", help="EcoTaxa password.")
+@click.option("--update", is_flag=True, default=False, help="Only update the metadata for existing samples.")
 @click.pass_context
-def upload(ctx, project, username, password):
+def upload(ctx, project, username, password, update):
     """Upload files to EcoTaxa."""
     from cytoprocess.commands import upload
-    upload.run(ctx, project=Path(project), username=username, password=password)
+    upload.run(ctx, project=Path(project), username=username, password=password, update=update)
 
 
 @cli.command(name="all")

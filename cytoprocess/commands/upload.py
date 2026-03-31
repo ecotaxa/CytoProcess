@@ -1,3 +1,5 @@
+import tempfile
+import zipfile
 from pathlib import Path
 import click
 import yaml
@@ -7,7 +9,28 @@ from cytoprocess.project import check_project_integrity, list_sample_assets
 from cytoprocess.utils import raiseCytoError, format_file_size
 
 
-def run(ctx: click.Context, project: Path, username: str | None = None, password: str | None = None):
+def _extract_tsv_in_new_zip(zip_path: Path, logger) -> Path | None:
+    """Extract the TSV from zip_path and re-zip it alone in a new temporary zip.
+
+    The TSV is expected at the root of the zip as '{zip_path.stem}.tsv'.
+    Returns the path to the new zip, or None if the TSV was not found.
+    """
+    # Extract the TSV file from the original zip, to a temporary directory
+    tsv_name = f"ecotaxa_{zip_path.stem}.tsv"
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        if tsv_name not in zf.namelist():
+            raiseCytoError(f"  '{tsv_name}' not found in '{zip_path}', skipping", logger)
+        tmp_dir = Path(tempfile.mkdtemp())
+        zf.extract(tsv_name, path=tmp_dir)
+
+    # Create a new zip with just that file
+    new_zip_path = tmp_dir / zip_path.name
+    with zipfile.ZipFile(new_zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.write(tmp_dir / tsv_name, tsv_name)
+    return new_zip_path
+
+
+def run(ctx: click.Context, project: Path, username: str | None = None, password: str | None = None, update: bool = False):
     # Housekeeping for the command
     logger = setup_logging(command="upload", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Uploading samples to EcoTaxa", project)
@@ -58,21 +81,24 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
     existing_samples = ecotaxa.get_project_samples(api_url, project_id, token, logger)
     logger.debug(f"Found {len(existing_samples)} existing sample(s) in project")
     
-    # TODO allow re-uploading only the metadata, with --force (fetch the .tsv when it exists or the tsv inside the zip)
-
     # Process each zip file: upload, import, and monitor until complete
     for zip_path in zip_files:
         # Extract sample ID from filename (ecotaxa_<sample_id>.zip)
         sample_id = zip_path.stem.replace("ecotaxa_", "")
         logger.info(f"'{sample_id}'")
-        
-        # Skip if sample already exists
-        if sample_id in existing_samples:
+
+        # Skip if sample already exists (unless updating)
+        if (sample_id in existing_samples) and not update:
             logger.info(f"  Skipping, sample already exists on EcoTaxa")
             continue
+
+        # If we only update, we need to extract the TSV and re-zip it
+        # because the API expects a zip file but we only want to upload the updated TSV
+        if update:
+            zip_path = _extract_tsv_in_new_zip(zip_path, logger)
         
         # Upload via TUS (resumable, with live progress)
-        logger.info(f"  Uploading '{zip_path.name}' ({format_file_size(zip_path.stat().st_size)})...")
+        logger.info(f"  Uploading '{zip_path.name}' (" + ("metadata only; " if update else "") + f"{format_file_size(zip_path.stat().st_size)})...")
         upload_result = ecotaxa.upload_file_tus(api_url, token, zip_path, logger=logger)
         logger.debug(f"Upload result: {upload_result}")
         
@@ -92,7 +118,8 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
         # Import
         logger.debug(f"Importing {sample_id}")
         server_directory = Path(server_path).stem
-        import_result = ecotaxa.import_file(api_url, project_id, token, server_directory, logger)
+        import_result = ecotaxa.import_file(api_url, project_id, token, server_directory,
+                                            update_mode="Yes" if update else "", logger=logger)
         logger.debug(f"Import result: {import_result}")
         
         if import_result.get("errors"):

@@ -386,7 +386,7 @@ def import_file(api_url: str, project_id: int, token: str, server_path: str, upd
     import_req = {
         "source_path": server_path,
         "skip_loaded_files": False,
-        "skip_existing_objects": False,
+        "skip_existing_objects": False if update_mode == "" else True,
         "update_mode": update_mode,
     }
 
