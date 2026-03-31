@@ -223,10 +223,11 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
     # Duplicate the DataFrame to reference masks and pulse shape images
     # (they have the same id but are stored as PNG files)
     df_masks = df.copy()
-    # Empty all columns that don't start with "img_" or end with "_id"
-    for col in df_masks.columns:
-        if not col.startswith('img_') and not col.endswith('_id'):
-            df_masks[col] = None
+    # TODO review once https://github.com/ecotaxa/ecotaxa/issues/69 is solved
+    # # Empty all columns that don't start with "img_" or end with "_id"
+    # for col in df_masks.columns:
+    #     if not col.startswith('img_') and not col.endswith('_id'):
+    #         df_masks[col] = None
     df_masks['img_file_name'] = df_masks['img_file_name'].str.replace('_img.jpg', '_mask.png', regex=False)
     df_masks['img_rank'] = 1
 
