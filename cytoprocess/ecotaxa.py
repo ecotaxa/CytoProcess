@@ -366,46 +366,6 @@ def upload_file_tus(
     )
 
 
-def upload_file(api_url: str, token: str, zip_path: Path, timeout: int = 300, logger: logging.Logger = None) -> dict:
-    """
-    Upload a zip file to EcoTaxa user's file area.
-
-    Args:
-        api_url: EcoTaxa API URL
-        token: JWT authentication token
-        zip_path: Path to the zip file to upload
-        timeout: Timeout in seconds for the upload request
-        logger: Logger instance
-
-    Returns:
-        Dictionary with 'server_path' if successful, or 'errors' list if failed.
-    """
-    if not zip_path.exists():
-        raiseCytoError(f"File not found: {zip_path}", logger)
-
-    logger.debug(f"Uploading '{zip_path.name}'")
-
-    try:
-        # upload is synchronous; wait for the response directly
-        with open(zip_path, "rb") as f:
-            response = requests.post(
-                f"{api_url}/user_files/",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"file": (zip_path.name, f, "application/zip")},
-                timeout=timeout,
-            )
-
-        if response.status_code != 200:
-            raiseCytoError(f"File upload failed: {response.text}", logger)
-
-        server_path = response.json()
-        logger.debug(f"File uploaded to: {server_path}")
-        return {"server_path": server_path}
-
-    except requests.RequestException as e:
-        raiseCytoError(f"File upload failed: {e}", logger)
-
-
 def import_file(api_url: str, project_id: int, token: str, server_path: str, logger: logging.Logger) -> dict:
     """
     Start an import job for a file already uploaded to EcoTaxa.
