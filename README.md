@@ -1,4 +1,4 @@
-# CytoProcess
+<img src="CytoProcess_logo.svg" alt="CytoProcess logo" width="300"/>
 
 Package to process images and their features from .cyz files from the CytoSense and upload them to EcoTaxa.
 
