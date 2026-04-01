@@ -150,6 +150,13 @@ def _merge_sample_data(project: Path, sample_id: str, samples_meta: pd.DataFrame
     df = df.merge(sample_meta_df, on=['sample_id'], how='left')
     df = df.merge(instrument_meta_df, on=['sample_id'], how='left')
 
+    # Optionally merge predictions if they exist
+    predictions_file = project / path_to_sample_asset(sample_id, 'predictions', logger)
+    if predictions_file.exists():
+        predictions_df = pd.read_parquet(predictions_file)
+        df = df.merge(predictions_df, on=['sample_id', 'object_id'], how='left')
+        logger.debug(f"Merged predictions for sample '{sample_id}'")
+
     # Prepend sample id to acq_id to avoid conflicts
     # (and name process id the same)
     df['acq_id'] = df['sample_id'] + "_" + df['acq_id']
@@ -299,7 +306,10 @@ def run(ctx: click.Context, project: Path, force=False):
 
     # List samples in work, filtered by --sample if provided
     samples_mask = ctx.obj["sample"]
-    sample_ids = [d.name for d in list_sample_assets(project, "dir", logger, samples_mask=samples_mask)]
+    sample_dirs = list_sample_assets(project, "dir", logger, samples_mask=samples_mask)
+    if not sample_dirs:
+        return
+    sample_ids = [d.name for d in sample_dirs]
 
     logger.info(f"Preparing EcoTaxa file for {len(sample_ids)} sample(s)")
 
