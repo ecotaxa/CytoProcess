@@ -199,14 +199,16 @@ def _prepare_ecotaxa_tsv(df: pd.DataFrame, tsv_file: Path, logger) -> pd.DataFra
     cols = df.columns.tolist()
     img_cols = [c for c in cols if c.startswith('img_')]
     object_cols = [c for c in cols if c.startswith('object_')]
+    # For objects, some columns do not count towards the maximum of 500 free metadata columns
+    object_cols_exclude = {"object_lon", "object_lat", "object_date", "object_time", "object_depth_min", "object_depth_max"}
+    object_cols_for_nb = [c for c in object_cols if not c.startswith('object_annotation_') and c not in object_cols_exclude]
     process_cols = [c for c in cols if c.startswith('process_')]
     acq_cols = [c for c in cols if c.startswith('acq_')]
     sample_cols = [c for c in cols if c.startswith('sample_')]
 
     # Limit object metadata columns to 500
     # NB: since object_id does not count as metadata, this means a maximum of 501 columns
-    # TODO actually object_lon, lat etc. do not count either so we could add more columns
-    if len(object_cols) > 501:
+    if len(object_cols_for_nb) > 501:
         logger.warning(f"Sample '{sample_id}' has {len(object_cols)-1} object metadata columns, truncating to 500 (EcoTaxa limit)")
         object_cols = object_cols[:501]
     # Limit sample, process, and acq columns
