@@ -113,7 +113,7 @@ def run(ctx: click.Context, project: Path, list_keys=False, force=False):
         
         paths = []
         for json_file in json_files:
-            logger.debug(f"Listing parameter paths from {json_file.name}")
+            logger.debug(f"Listing parameter paths from {json_file}")
             try:
                 with open(json_file, 'rb') as f:
                     # Use ijson to navigate to the particles array and get the first item
@@ -121,19 +121,19 @@ def run(ctx: click.Context, project: Path, list_keys=False, force=False):
                     first_particle = next(parser, None)
                     
                 if first_particle is None:
-                    logger.warning(f"No particles found in '{json_file.name}'")
+                    logger.warning(f"No particles found in '{json_file.parents[0].name}'")
                     continue
                     
                 parameters = first_particle.get('parameters', [])
                 
                 if parameters is None or len(parameters) == 0:
-                    logger.warning(f"No parameters found in first particle of '{json_file.name}'")
+                    logger.warning(f"No parameters found in first particle of '{json_file.parents[0].name}'")
                     continue
                                 
                 paths.extend(_get_parameters_structure(parameters))
                                 
             except Exception as e:
-                raiseCytoError(f"Error reading '{json_file.name}': {e}", logger)
+                raiseCytoError(f"Error reading '{json_file}': {e}", logger)
         
         if not paths:
             raiseCytoError("No parameter paths found in any .json file", logger)

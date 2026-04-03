@@ -160,7 +160,7 @@ def run(ctx: click.Context, project: Path, list_keys: bool=False, force: bool=Fa
                     n_new = len(new_keys - keys)
                     if n_new > 0:
                         keys.update(new_keys)
-                    logger.info(f"Found {n_new} " + ("new " if idx>0 else "") + f"metadata keys in '{json_file.name}'")
+                    logger.info(f"Found {n_new} " + ("new " if idx>0 else "") + f"metadata keys in '{json_file.parents[0].name}'")
                 
             except ijson.JSONError as e:
                 raiseCytoError(f"Failed to parse .json file '{json_file.name}': {e}", logger)
