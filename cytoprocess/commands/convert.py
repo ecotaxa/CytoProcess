@@ -79,8 +79,7 @@ def run(ctx: click.Context, project: Path, force=False):
             if result.stderr == '':
                 logger.debug(f"Successfully converted '{cyz_file.name}'")
             else:
-                logger.error(f"Conversion of '{cyz_file.name}' failed, see log for details")
-                logger.debug(f"Cyz2Json output:\n{result.stdout}\n{result.stderr}")
+                logger.warning(f"Conversion of '{cyz_file.name}' exited with a message\n{result.stdout}\n{result.stderr}")
         except subprocess.CalledProcessError as e:
             raiseCytoError(f"Failed to convert '{cyz_file.name}': {e.stderr}", logger)
         except Exception as e:
