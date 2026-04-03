@@ -16,131 +16,156 @@ from skimage import measure, morphology
 from cytoprocess.logging import setup_logging, log_command_start, log_command_success
 from cytoprocess.project import list_sample_assets, path_to_sample_asset
 from cytoprocess.utils import get_json_section, raiseCytoError
+from cytoprocess.utils import imshow
 
 
-def _rescale_pixel_values(img: np.ndarray) -> np.ndarray:
+def _crop_background(background_img: np.ndarray, crop: dict, img_shape: tuple) -> np.ndarray:
     """
-    Rescale values in an images into the range [0, 255].
-    Args:
-        img: Input image as a numpy array
-    Returns:
-        Image with pixel values rescaled to the range [0, 255] as a numpy uint8 array
-    """
-    vmin = img.min()
-    vmax = img.max()
-    if vmax > vmin:
-        return ((img - vmin) / (vmax - vmin) * 255.0).astype(np.uint8)
-    else:
-        return np.zeros_like(img, dtype=np.uint8)
-
-
-def _clean_background(img: np.ndarray, background_img: np.ndarray, crop: dict) -> np.ndarray:
-    """
-    Remove the background based on the crop rectangle and the background image
+    Extract and save the background crop corresponding to the image crop region.
     
     Args:
-        img: Grayscale crop as numpy array
         background_img: Full background image as numpy array
-        crop: Dictionary with keys 'X', 'Y', 'Width', 'Height' defining the crop rectangle in the original image coordinates
-    
+        crop: Dictionary with keys 'X', 'Y', 'Width', 'Height' defining the crop rectangle
+        img_shape: Shape of the image (height, width)
+        
     Returns:
-        Grayscale image with background cleaned up, as numpy array    
+        Cropped background region as numpy array
     """
-
     # Extract bbox coordinates
     x = int(crop.get('X', 0))
     y = int(crop.get('Y', 0))
-    width = int(crop.get('Width', img.shape[1]))
-    height = int(crop.get('Height', img.shape[0]))
+    width = int(crop.get('Width', img_shape[1]))
+    height = int(crop.get('Height', img_shape[0]))
 
     # Correct a bug when the crop is the full background image
-    if x == 0 and width  == (img.shape[1] - 1):
+    if x == 0 and width == (img_shape[1] - 1):
         width += 1
-    if y == 0 and height == (img.shape[0] - 1):
+    if y == 0 and height == (img_shape[0] - 1):
         height += 1
-
-    # Add reference black and white to ensure consistent dynamic range in the rescaling
-    img_with_ref = np.concatenate((
-        np.zeros((1, img.shape[1]), dtype=np.uint8),
-        np.ones((1, img.shape[1]), dtype=np.uint8)*255,
-        img), axis=0
-    )
 
     # Extract corresponding background region
     x2 = x + width
     y2 = y + height
     bkg = background_img[y:y2, x:x2]
-    bkg_with_ref = np.concatenate((
-        # Add two lines of black, to subtract to the reference lines added above
-        # (black is 0 so it won't matter during the subtraction, but it will ensure the dimensions match)
-        np.zeros((1, bkg.shape[1]), dtype=np.uint8),
-        np.zeros((1, bkg.shape[1]), dtype=np.uint8),
-        bkg), axis=0
-    )
-
-    # Subtract background
-    sub = img_with_ref.astype(np.float32) - bkg_with_ref.astype(np.float32)
     
-    # There is noise left around the background level
-    # remove the values around 0 to clean it up
-    threshold = 10
-    sub[(sub < threshold) & (sub > -threshold)] = 0
-
-    # Now rescale the values
-    cleaned_img = _rescale_pixel_values(sub)
-    
-    # Remove the reference lines
-    cleaned_img = cleaned_img[2:,:]
-
-    return cleaned_img
+    return bkg
 
 
-def _segment_particle(img: np.ndarray, logger: logging.Logger | None) -> np.ndarray:
+def mad(x):
+    """Compute the median absolute deviation of a 1D array or list."""
+    med = np.median(x)
+    mad = np.median(np.absolute(x - med))
+    return (mad, med)
+
+
+def mm(x, y_min = 3, y_max = 20, Km = 50000):
     """
-    Segment the largest particle from an image using edge detection and morphological operations.
-    
+    Returns an integer y that increases with x (Michaelis-Menten kinetics)
+
     Args:
-        image: Grayscale image as numpy array
-        logger: Logger instance for logging warnings and info messages
-        
+        x: integer between 0 and +Inf
+        ymin, ymax: low and high bounds of the output
+        Km: half-saturation constant (x value at which y = (y_min + y_max) / 2)
     Returns:
-        Binary mask of the largest particle, or None if no particle found
+        y: integer between ymin and ymax
     """
-
-    # Compute the background level as the median of the pixel values along the borders of the image
-    borders = (img[0,:], img[-1,:], img[:,0], img[:,-1])
-    bkg = np.median(np.concatenate(borders))
-
-    # threshold the darker regions
-    # TODO to handle strongly refringent objects, check of the center is lighter
-    #      than the edges and, in that case, invert the image and re-threshold
-    msk = img < bkg
-
-    # Close the mask
-    # dilate a bit, erode a bit, and close the remaining holes
-    dilated = morphology.dilation(msk, morphology.disk(2))
-    eroded = morphology.erosion(dilated, morphology.disk(2))
-    filled = ndimage.binary_fill_holes(eroded)
-
-    # Label connected regions
-    labeled = measure.label(filled)
-    if labeled.max() == 0:
-        if logger is not None:
-            logger.warning("No particles found in image")
-        return filled
-    
-    # Find the largest region
-    regions = measure.regionprops(labeled)    
-    largest_region = max(regions, key=lambda r: _fast_particle_area(r))
-    
-    # Create mask for largest region only
-    mask = (labeled == largest_region.label)
-
-    return mask
+    y = y_min + (y_max - y_min) * x / (Km + x)
+    return np.round(y).astype(int)
 
 
 def _fast_particle_area(x):
+    """Compute the area of a particle from region props in a fast way"""
     return(np.sum(x._label_image[x._slice] == x.label))
+
+
+def _get_largest_region(msk):
+    """
+    Get the largest connected region from a binary mask
+    
+    Args:
+        msk: Binary mask as a numpy array
+
+    Returns:
+        Binary mask of the largest region, or None if no regions found
+    """
+    lab = measure.label(msk)
+    if lab.max() == 0:
+        # No regions found, return the original mask (which is empty)
+        return msk
+
+    reg = measure.regionprops(lab)    
+    largest_region = max(reg, key=lambda r: _fast_particle_area(r))
+    msk = (lab == largest_region.label)
+    return msk
+
+
+def _segment_particle(id: str, img: np.ndarray, bkg: np.ndarray, logger: logging.Logger) -> np.ndarray:
+    """
+    Segment the particle from the background using a custom algorithm based on background subtraction and morphological operations.
+    """
+    # imshow(img)
+    # imshow(bkg)
+
+    ## 1/ Subtract the background
+    pro = img.astype(np.float32) / bkg.astype(np.float32)
+    # background is ~ 1
+    # darker regions are lower than background -> < 1
+    # lighter regions are higher than background -> > 1
+
+    ## 2/ Threshold
+    # define background statistics from the borders of the image,
+    # which are more likely to be pure background
+    borders = np.concatenate((pro[0:3,:].flatten(), pro[-3:-1,:].flatten(),
+                              pro[:,0:3].flatten(), pro[:,-3:-1].flatten()))
+    bkg_mad, bkg_med = mad(borders)
+
+    # select significantly different-than-background regions
+    pro = pro - bkg_med
+    #     lighter               or darker
+    msk = (pro > (bkg_mad * 4)) | (pro < -(bkg_mad * 3))
+    # NB: increasing the mad multiplier here reduces the region selected
+
+    ## 3/ Refine the mask
+    # remove small objects
+    msk = morphology.remove_small_objects(msk, max_size=10)
+    # dilate a bit, erode a bit, and close the remaining holes
+    msk = morphology.closing(msk, morphology.disk(3))
+    # fill holes within the masks
+    msk = ndimage.binary_fill_holes(msk)
+    # keep only the largest connected region
+    # if no regions are left, this returns None
+    msk = _get_largest_region(msk)
+
+    # if the mask is already empty, just stop
+    if not msk.any():
+        return msk
+
+    ## 4/ Eliminate light halos = 
+    # Extract the external edge of the mask to check if it is light
+    # Erode the mask to remove the light regions
+
+    # Make the size of the edge proportional to the size of the object,
+    # to inscpect a consistent region around the object, regardless of its size
+    area = np.sum(msk)
+    disk_radius = mm(area)
+    # Define the edge of the object
+    edge = msk & ~morphology.erosion(msk, morphology.disk(disk_radius))
+    
+    # If the edge is often lighter than the background,
+    # then we are likely in the presence of a halo
+    if (img[edge] > 1.05 * bkg[edge]).mean() > 0.2:
+        # Remove the light parts of the edge of the object from the mask
+        in_halo = (img > bkg) & edge
+        msk[in_halo] = False
+
+        # Fill holes again, in case this created new ones
+        msk = ndimage.binary_fill_holes(msk)
+
+        # Get only the largest particule again,
+        # in case the erosion created several disconnected regions
+        msk = _get_largest_region(msk)
+
+    return msk
 
 
 def _extract_features(mask: np.ndarray, image: np.ndarray) -> dict | None:
@@ -152,7 +177,7 @@ def _extract_features(mask: np.ndarray, image: np.ndarray) -> dict | None:
         image: Original grayscale image
         
     Returns:
-        Dictionary of features
+        Dictionary of features or None if the mask is empty (no particle found)
     """
     # Label the mask (should be single region)
     labeled = measure.label(mask)
@@ -161,9 +186,13 @@ def _extract_features(mask: np.ndarray, image: np.ndarray) -> dict | None:
         return None    
     
     # Extract relevant features
-    props = ['area', 'area_filled', 'axis_major_length', 'axis_minor_length', 
-             'eccentricity', 'feret_diameter_max', 'intensity_max', 'intensity_mean',
-             'intensity_median', 'intensity_min', 'intensity_std', 'perimeter', 'solidity']
+    props = ['area', 'area_filled', 'convex_area',
+             'axis_major_length', 'axis_minor_length', 'feret_diameter_max',
+             'eccentricity',
+             'moments_hu',
+             'intensity_max', 'intensity_mean', 'intensity_median', 'intensity_min', 'intensity_std',
+              'perimeter', 'perimeter_crofton',
+              'solidity']
     features_table = measure.regionprops_table(labeled, intensity_image=image, properties=props)
     
     return features_table
@@ -258,7 +287,7 @@ def _add_scale_bar(img: np.ndarray, pixel_size: float) -> np.ndarray:
 
 
 def _process_single_image(image: dict, background_img: np.ndarray,
-                          pixel_size: float, sample_id: str, images_dir: Path) -> tuple[dict | None, bool, str | None]:
+                          pixel_size: float, sample_id: str, images_dir: Path, logger: logging.Logger) -> tuple[dict | None, bool, str | None]:
     """
     Process a single image. Returns a tuple of (row_dict, success, error_msg).
     This function is designed to run in parallel.
@@ -267,7 +296,7 @@ def _process_single_image(image: dict, background_img: np.ndarray,
         # Extract elements for the current image
         particle_id = image.get('particleId')                
         if particle_id is None:
-            return (None, False, "Image missing 'particleId'")
+            return (None, False, f"Image missing the 'particleId' field")
         
         base64_data = image.get('base64')
         if base64_data is None:
@@ -283,22 +312,28 @@ def _process_single_image(image: dict, background_img: np.ndarray,
         except Exception as e:
             return (None, False, f"Failed to decode base64 for particle {particle_id}: {e}")
         
-        # read as an image
+        # Read as an image
         img = iio.imread(image_data)
+        # base_path = str( images_dir / f"{particle_id}.jpg")
+        # with open(base_path.replace('.jpg', '_rawimg.jpg'), 'wb') as img_file:
+        #     iio.imwrite(img_file, img, format='jpg', quality=100)
 
-        # clean the background and segment the particle
-        img_no_bg = _clean_background(img, background_img, crop)
-        img_mask = _segment_particle(img_no_bg, None)  # Pass None for logger in parallel context
+        # Segment the particle
+        bkg = _crop_background(background_img, crop, img.shape)
+        # with open(base_path.replace('.jpg', '_rawbkg.jpg'), 'wb') as img_file:
+        #     iio.imwrite(img_file, bkg, format='jpg', quality=100)
+        img_mask = _segment_particle(particle_id, img, bkg, logger)
         
         # Add scale bar to the image and the mask
         img = _add_scale_bar(img, pixel_size=pixel_size)
         img_mask = _add_scale_bar(img_mask, pixel_size=pixel_size)
 
+        # Extract features from the particle
         features = _extract_features(img_mask, img)
         if features is None:
-            return (None, False, f"Could not extract features from particle {particle_id}")
+            return (None, False, f"  No object detected on image {particle_id}")
 
-        # Write the image and mask from the worker process to avoid large IPC payloads.
+        # Write the image and mask from the worker process to avoid having to return them
         output_file = images_dir / f"{particle_id}_img.jpg"
         with open(output_file, 'wb') as img_file:
             iio.imwrite(img_file, img, format='jpg', quality=98)
@@ -307,7 +342,7 @@ def _process_single_image(image: dict, background_img: np.ndarray,
         with open(output_file, 'wb') as img_file:
             iio.imwrite(img_file, (img_mask * 255).astype(np.uint8), format='png')
 
-        # Create row with identifiers and features
+        # Create a DataFrame row with identifiers and features
         row = {
             'sample_id': sample_id,
             'object_id': f"{sample_id}_{particle_id}"
@@ -395,13 +430,17 @@ def run(ctx: click.Context, project: Path, force=False, max_cores=None):
             images_dir.mkdir(parents=True, exist_ok=True)
 
             # Process images in parallel
-            num_workers = min(n_cores, len(images))  # Don't create more workers than images
-            logger.debug(f"Processing {len(images)} images using {num_workers} workers")
-            
-            with Pool(num_workers) as pool:
-                process_func = partial(_process_single_image, background_img=background_img, 
-                                      pixel_size=pixel_size, sample_id=sample_id, images_dir=images_dir)
-                results = pool.map(process_func, images)
+            if ctx.obj["debug"]:
+                logger.debug("Debug mode enabled, processing images sequentially")
+                results = [_process_single_image(image, background_img, pixel_size, sample_id, images_dir, logger) for image in images]
+            else:
+                num_workers = min(n_cores, len(images))  # Don't create more workers than images
+                logger.debug(f"Processing {len(images)} images using {num_workers} workers")
+                
+                with Pool(num_workers) as pool:
+                    process_func = partial(_process_single_image, background_img=background_img, 
+                                        pixel_size=pixel_size, sample_id=sample_id, images_dir=images_dir, logger=logger)
+                    results = pool.map(process_func, images)
             
             # Process results
             image_count = 0
