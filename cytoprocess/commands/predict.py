@@ -124,6 +124,9 @@ def run(ctx: click.Context, project: Path, function_spec: str, force: bool = Fal
             )
             continue
 
+        if "annotation_status" not in predictions.columns:
+            predictions["annotation_status"] = "predicted"
+
         predictions.columns = [f"object_{c}" for c in predictions.columns]
         predictions.insert(0, "object_id", features_df["object_id"].values)
         predictions.insert(0, "sample_id", sample_id)
