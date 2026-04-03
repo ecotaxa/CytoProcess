@@ -41,7 +41,7 @@ def run(ctx: click.Context, project: Path, extra_fields=DEFAULT_EXTRA_FIELDS):
     else:
         extra_field_list = []
     logger.debug(f"Extra fields: {extra_field_list}")
-    # TODO if the file exists and extra_fields is not explicitly provided, just keep the columns already existing (to avoid having to specify extra_fields everytime)
+    # TODO if the file exists and extra_fields is not explicitly provided, just keep the columns already existing (to avoid having to specify extra_fields everytime); it might be the case already
 
     # Create metadata CSV with sample information   
     meta_dir = project / "meta"
@@ -76,6 +76,7 @@ def run(ctx: click.Context, project: Path, extra_fields=DEFAULT_EXTRA_FIELDS):
                 for field in missing_fields:
                     logger.debug(f"Adding new column '{field}' to '{meta_file}'")
                     final_df[field] = None
+        # TODO remove samples that are not longer present in the raw directory
                     
         # If there are new samples, append them
         else:

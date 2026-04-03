@@ -83,6 +83,8 @@ def list_sample_assets(project: Path, kind: str, logger: logging.Logger, samples
     Returns:
         A list of Path objects for the expected files/directories
     """
+    # TODO consider the possibility of using samples.csv as reference for everything. This would allow to exclude some samles on purpose and force people to go through `cytoprocess list` for each new addition, which should remind tom to fill the metadata
+
     # Determine command to run when no asset is present, depending on kind
     if kind == "cyz":
         command = "create"
