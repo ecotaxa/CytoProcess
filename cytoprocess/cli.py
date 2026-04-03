@@ -48,7 +48,7 @@ def install(ctx, force):
 def create(ctx, project):
     """Create a new CytoProcess project directory."""
     from cytoprocess.commands import create
-    create.run(ctx, project=Path(project))
+    create.run(ctx, project=Path(project).expanduser())
 
 
 @cli.command(name="list")
@@ -58,7 +58,7 @@ def create(ctx, project):
 def list_samples(ctx, project, extra_fields):
     """List samples and create/update meta/samples.csv."""
     from cytoprocess.commands import list as list_cmd
-    list_cmd.run(ctx, project=Path(project), extra_fields=extra_fields)
+    list_cmd.run(ctx, project=Path(project).expanduser(), extra_fields=extra_fields)
 
 
 @cli.command(name="convert")
@@ -68,7 +68,7 @@ def list_samples(ctx, project, extra_fields):
 def convert(ctx, project, force):
     """Convert .cyz files to .json format."""
     from cytoprocess.commands import convert
-    convert.run(ctx, project=Path(project), force=force)
+    convert.run(ctx, project=Path(project).expanduser(), force=force)
 
 
 @cli.command(name="extract_meta")
@@ -79,7 +79,7 @@ def convert(ctx, project, force):
 def extract_meta(ctx, project, list_keys, force):
     """Extract instrument metadata from .json files."""
     from cytoprocess.commands import extract_meta
-    extract_meta.run(ctx, project=Path(project), list_keys=list_keys, force=force)
+    extract_meta.run(ctx, project=Path(project).expanduser(), list_keys=list_keys, force=force)
 
 
 @cli.command(name="extract_cyto")
@@ -90,7 +90,7 @@ def extract_meta(ctx, project, list_keys, force):
 def extract_cyto(ctx, project, list_keys, force):
     """Extract cytometric features from .json files."""
     from cytoprocess.commands import extract_cyto
-    extract_cyto.run(ctx, project=Path(project), list_keys=list_keys, force=force)
+    extract_cyto.run(ctx, project=Path(project).expanduser(), list_keys=list_keys, force=force)
 
 
 @cli.command(name="summarise_pulses")
@@ -102,7 +102,7 @@ def extract_cyto(ctx, project, list_keys, force):
 def summarise_pulses(ctx, project, n_poly, force, max_cores):
     """Summarise pulse shapes."""
     from cytoprocess.commands import summarise_pulses
-    summarise_pulses.run(ctx, project=Path(project), n_poly=n_poly, force=force, max_cores=max_cores)
+    summarise_pulses.run(ctx, project=Path(project).expanduser(), n_poly=n_poly, force=force, max_cores=max_cores)
 
 
 @cli.command(name="extract_images")
@@ -113,18 +113,7 @@ def summarise_pulses(ctx, project, n_poly, force, max_cores):
 def extract_images(ctx, project, force, max_cores):
     """Extract images from .json files."""
     from cytoprocess.commands import extract_images
-    extract_images.run(ctx, project=Path(project), force=force, max_cores=max_cores)
-
-
-@cli.command(name="predict")
-@click.argument("project", type=click.Path(exists=True))
-@click.option("--model", "-m", required=True, help="A function encapsulating the prediction model, specificed as 'path/to/model.py::func_name' or 'my_module.func_name'. The function should accept two arguments (1) paths: a list of absolute paths to the images, (2) features: a DataFrame with cytometric and image features (the cytometric ones are defined in config.xml). It should return a DataFrame (or a dictionary that can be converted to one) with objects in the same order as in the input and at least one column called 'annotation_category' containing the EcoTaxa category name predicted for each object. Other columns can be added. All column names be prepended with 'object_' before their import into EcoTaxa.")
-@click.option("--force", "-f", is_flag=True, default=False, help="Force re-prediction even if output already exists. ")
-@click.pass_context
-def predict(ctx, project, model, force):
-    """Run a user-provided prediction model on extracted images and features."""
-    from cytoprocess.commands import predict
-    predict.run(ctx, project=Path(project), function_spec=model, force=force)
+    extract_images.run(ctx, project=Path(project).expanduser(), force=force, max_cores=max_cores)
 
 
 @cli.command(name="prepare")
@@ -134,7 +123,7 @@ def predict(ctx, project, model, force):
 def prepare(ctx, project, force):
     """Prepare .tsv and images for EcoTaxa."""
     from cytoprocess.commands import prepare
-    prepare.run(ctx, project=Path(project), force=force)
+    prepare.run(ctx, project=Path(project).expanduser(), force=force)
 
 
 @cli.command(name="upload")
@@ -146,7 +135,7 @@ def prepare(ctx, project, force):
 def upload(ctx, project, username, password, update):
     """Upload files to EcoTaxa."""
     from cytoprocess.commands import upload
-    upload.run(ctx, project=Path(project), username=username, password=password, update=update)
+    upload.run(ctx, project=Path(project).expanduser(), username=username, password=password, update=update)
 
 
 @cli.command(name="all")
@@ -167,22 +156,22 @@ def all(ctx, project, force, n_poly, max_cores):
         upload,
     )
     
-    logger = setup_logging(command="all", project=Path(project), debug=ctx.obj["debug"])
+    logger = setup_logging(command="all", project=Path(project).expanduser(), debug=ctx.obj["debug"])
     logger.info(f"Running all processing steps for project: {project}")
     
-    convert.run(ctx, project=Path(project), force=force)
+    convert.run(ctx, project=Path(project).expanduser(), force=force)
     
-    extract_meta.run(ctx, project=Path(project), list_keys=False)
+    extract_meta.run(ctx, project=Path(project).expanduser(), list_keys=False)
 
-    extract_cyto.run(ctx, project=Path(project), list_keys=False, force=force)
+    extract_cyto.run(ctx, project=Path(project).expanduser(), list_keys=False, force=force)
     
-    summarise_pulses.run(ctx, project=Path(project), force=force, n_poly=n_poly, max_cores=max_cores)
+    summarise_pulses.run(ctx, project=Path(project).expanduser(), force=force, n_poly=n_poly, max_cores=max_cores)
 
-    extract_images.run(ctx, project=Path(project), force=force, max_cores=max_cores)
+    extract_images.run(ctx, project=Path(project).expanduser(), force=force, max_cores=max_cores)
         
-    prepare.run(ctx, project=Path(project), force=force)
+    prepare.run(ctx, project=Path(project).expanduser(), force=force)
     
-    upload.run(ctx, project=Path(project))
+    upload.run(ctx, project=Path(project).expanduser())
     
     logger.info("All processing steps completed successfully")
 
@@ -194,7 +183,7 @@ def all(ctx, project, force, n_poly, max_cores):
 def status(ctx, project, width):
     """Show per-sample processing status."""
     from cytoprocess.commands import status
-    status.run(ctx, project=Path(project), width=width)
+    status.run(ctx, project=Path(project).expanduser(), width=width)
 
 
 @cli.command(name="clean")
@@ -204,7 +193,19 @@ def status(ctx, project, width):
 def clean(ctx, project, older_than):
     """Remove intermediate files in the project."""
     from cytoprocess.commands import clean
-    clean.run(ctx, project=Path(project), older_than=older_than)
+    clean.run(ctx, project=Path(project).expanduser(), older_than=older_than)
+
+
+@cli.command(name="predict")
+@click.argument("project", type=click.Path(exists=True))
+@click.option("--model", "-m", required=True, help="A function encapsulating the prediction model, specificed as 'path/to/model.py::func_name' or 'my_module.func_name'. The function should accept two arguments (1) paths: a list of absolute paths to the images, (2) features: a DataFrame with cytometric and image features (the cytometric ones are defined in config.xml). It should return a DataFrame (or a dictionary that can be converted to one) with objects in the same order as in the input and at least one column called 'annotation_category' containing the EcoTaxa category name predicted for each object. Other columns can be added. All column names be prepended with 'object_' before their import into EcoTaxa.")
+@click.option("--force", "-f", is_flag=True, default=False, help="Force re-prediction even if output already exists. ")
+@click.pass_context
+def predict(ctx, project, model, force):
+    """Run a user-provided model to predict classifications."""
+    from cytoprocess.commands import predict
+    predict.run(ctx, project=Path(project).expanduser(), function_spec=model, force=force)
+
 
 
 def main(argv=None):
