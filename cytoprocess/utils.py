@@ -3,10 +3,13 @@
 import logging
 import math
 from pathlib import Path
+import sys
 
 import click
 import ijson
 import yaml
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def get_json_section(json_file: Path, key: str, logger: logging.Logger) -> dict | list | None:
@@ -114,7 +117,13 @@ def format_file_size(size: int) -> str:
 
 def imshow(img):
     """Utility function to display an image (for debugging)."""
-    import matplotlib.pyplot as plt
-    plt.imshow(img, cmap='gray', vmin=0, vmax=255)
-    plt.axis('off')
-    plt.show()
+    # If we are in an interactive environment, display the image
+    if hasattr(sys, 'ps1'):
+        if np.issubdtype(img.dtype, np.bool_):
+            img = img.astype(np.uint8) * 255
+        if np.min(img) < 0 or np.max(img) > 255:
+            plt.imshow(img, cmap='gray')
+        else:
+            plt.imshow(img, cmap='gray', vmin=0, vmax=255)
+        plt.axis('off')
+        plt.show()
