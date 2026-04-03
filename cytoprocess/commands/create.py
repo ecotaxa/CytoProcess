@@ -14,7 +14,7 @@ def run(ctx: click.Context, project: Path):
     
 
     # Create the main directory if it doesn't exist
-    if (Path(project).exists()):
+    if (project.exists()):
         logger.info(f"Project directory '{project}' already exists,\nChecking its contents...")
     else:
         logger.info(f"Creating project directory '{project}'.")
