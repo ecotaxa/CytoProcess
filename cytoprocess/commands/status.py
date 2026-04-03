@@ -73,7 +73,10 @@ def _compute_sample_status(project: Path, sample_id: str, meta_df: pd.DataFrame,
     ecotaxa_file = project / path_to_sample_asset(sample_id, "zip", logger)
 
     # ecotaxa uploads
-    sample_on_ecotaxa = sample_id in ecotaxa_samples
+    if ecotaxa_samples is None:
+        sample_on_ecotaxa = None
+    else:
+        sample_on_ecotaxa = sample_id in ecotaxa_samples
 
     status = {
         "sample_id": sample_id,
@@ -132,7 +135,11 @@ def _define_sample_progress(sample_status: dict) -> tuple[str, str]:
     red = "\x1b[31m"
     reset = "\x1b[0m"
     step_ok = [check(sample_status) for _, check in STATUS_STEPS]
-    progress = "".join(f"{green}✔︎{reset}" if ok else f"{red}✗{reset}" for ok in step_ok)
+    progress = "".join(
+        "?" if ok is None else f"{green}✔︎{reset}" if ok else f"{red}✗{reset}"
+        for ok in step_ok
+    )
+
     
     # Define which is the next command
     for (command, _), ok in zip(STATUS_STEPS, step_ok):
@@ -178,8 +185,8 @@ def run(ctx: click.Context, project: Path, width: int = 40):
     api_url = ecotaxa_config.get("url", "https://ecotaxa.obs-vlfr.fr") + "/api"
     
     if not project_id:
-        ecotaxa_samples = []
-        logger.warning(f"No EcoTaxa project ID found in config file '{config_path}', skipping EcoTaxa status checks")
+        ecotaxa_samples = None
+        logger.warning(f"No EcoTaxa project ID found in config file '{config_path}', cannot perform EcoTaxa status checks")
     else:
         token = ecotaxa.authenticate(api_url, logger=logger)
         if token is None:
