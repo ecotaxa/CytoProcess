@@ -406,7 +406,7 @@ def run(ctx: click.Context, project: Path, force=False, max_cores=None):
             
             # Extract the images section from the JSON file
             images = get_json_section(json_file, 'images', logger)
-            if images is None:
+            if len(images) == 0:
                 logger.warning(f"No images found in '{json_file.name}'")
                 continue
 
