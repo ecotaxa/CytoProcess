@@ -171,17 +171,20 @@ def prepare(ctx, project, force):
 @click.option("--username", "-u", help="EcoTaxa email address.")
 @click.option("--password", "-p", help="EcoTaxa password.")
 @click.option("--update", is_flag=True, default=False, help="Only update the metadata for existing samples.")
+@click.option("--batch", "-b", default=10, type=click.IntRange(min=1), help="Number of samples to aggregate into a single upload (default: 10).")
 @click.pass_context
-def upload(ctx, project, username, password, update):
+def upload(ctx, project, username, password, update, batch):
     """
     Upload files to EcoTaxa.
     
     The .zip files prepared are uploaded and then imported into an EcoTaxa project, configured in config.xml.
     
     If the `--update` flag is used, only the metadata of existing samples is updated, without re-uploading the images. This is useful to update the metadata after editing samples.csv: it only requires to re-run the `prepare` step and then `upload --update`.
+
+    Multiple samples can be aggregated into a single upload using `--batch`. The samples are combined into one zip file, uploaded, and imported together. This is usually faster than uploading sample per sample.
     """
     from cytoprocess.commands import upload
-    upload.run(ctx, project=Path(project).expanduser(), username=username, password=password, update=update)
+    upload.run(ctx, project=Path(project).expanduser(), username=username, password=password, update=update, batch=batch)
 
 
 @cli.command(name="all")
@@ -191,15 +194,14 @@ def upload(ctx, project, username, password, update):
 @click.option("--max-cores", "-m", type=int, default=15, help="Maximum number of CPU cores to use for parallel processing.")
 @click.pass_context
 def all(ctx, project, force, n_poly, max_cores):
-    """Run all steps from convert to upload in sequence."""
+    """Run all steps from convert to prepare in sequence."""
     from cytoprocess.commands import (
         convert,
         extract_meta,
         extract_cyto,
         summarise_pulses,
         extract_images,
-        prepare,
-        upload,
+        prepare
     )
     
     logger = setup_logging(command="all", project=Path(project).expanduser(), debug=ctx.obj["debug"])
@@ -216,10 +218,8 @@ def all(ctx, project, force, n_poly, max_cores):
     extract_images.run(ctx, project=Path(project).expanduser(), force=force, max_cores=max_cores)
         
     prepare.run(ctx, project=Path(project).expanduser(), force=force)
-    
-    upload.run(ctx, project=Path(project).expanduser())
-    
-    logger.info("All processing steps completed successfully")
+        
+    logger.info(f"All processing steps completed successfully. You can now run 'cytoprocess upload {project}' to upload the prepared files to EcoTaxa.")
 
 
 @cli.command(name="status")

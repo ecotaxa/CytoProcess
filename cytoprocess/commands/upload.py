@@ -11,6 +11,22 @@ from cytoprocess.project import check_project_integrity, list_sample_assets
 from cytoprocess.utils import format_file_size, raiseCytoError
 
 
+def _create_batch_zip(zip_paths: list[Path], logger) -> Path:
+    """Combine the contents of multiple zip files into a single zip in a temp directory.
+
+    Several zip files are combined into a single zip file, where each original zip is added as a file at the root of the new zip.
+    Returns the path to the combined zip.
+    """
+    batch_name = f"batch_{zip_paths[0].stem}_{zip_paths[-1].stem}"
+    tmp_dir = Path(tempfile.mkdtemp())
+    batch_zip_path = tmp_dir / f"{batch_name}.zip"
+    logger.debug(f"Creating batch zip '{batch_zip_path.name}' from {len(zip_paths)} zip(s)")
+    with zipfile.ZipFile(batch_zip_path, "w", zipfile.ZIP_STORED) as batch_zf:
+        for zip_path in zip_paths:
+            batch_zf.write(zip_path, zip_path.name)
+    return batch_zip_path
+
+
 def _extract_tsv_in_new_zip(zip_path: Path, logger) -> Path | None:
     """Extract the TSV from zip_path and re-zip it alone in a new temporary zip.
 
@@ -32,7 +48,7 @@ def _extract_tsv_in_new_zip(zip_path: Path, logger) -> Path | None:
     return new_zip_path
 
 
-def run(ctx: click.Context, project: Path, username: str | None = None, password: str | None = None, update: bool = False):
+def run(ctx: click.Context, project: Path, username: str | None = None, password: str | None = None, update: bool = False, batch: int = 10):
     # Housekeeping for the command
     logger = setup_logging(command="upload", project=project, debug=ctx.obj["debug"])
     log_command_start(logger, "Uploading samples to EcoTaxa", project)
@@ -69,7 +85,9 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
         raiseCytoError(f"Stopping", logger)
     
     logger.info(f"Found {len(zip_files)} zip file(s) to upload")
-    
+    batch = max(1, batch)
+    logger.info(f"Uploading in batches of {batch}")
+
     # Get and display project name
     project_info = ecotaxa.get_project_info(api_url, project_id, token, logger)
     if project_info:
@@ -83,22 +101,41 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
     existing_samples = ecotaxa.get_project_samples(api_url, project_id, token, logger)
     logger.debug(f"Found {len(existing_samples)} existing sample(s) in project")
     
-    # Process each zip file: upload, import, and monitor until complete
-    for zip_path in zip_files:
-        # Extract sample ID from filename (ecotaxa_<sample_id>.zip)
-        sample_id = zip_path.stem.replace("ecotaxa_", "")
-        logger.info(f"'{sample_id}'")
+    # Process zip files in batches: aggregate, upload, import, and monitor until complete
+    batches = [zip_files[i:i + batch] for i in range(0, len(zip_files), batch)]
+    for batch_zip_paths in batches:
+        sample_ids = [z.stem.replace("ecotaxa_", "") for z in batch_zip_paths]
+        batch_label = sample_ids[0] if len(sample_ids) == 1 else f"{sample_ids[0]} … {sample_ids[-1]} ({len(sample_ids)} samples)"
+        logger.info(f"Batch: {batch_label}")
 
-        # Skip if sample already exists (unless updating)
-        if (sample_id in existing_samples) and not update:
-            logger.info(f"  Skipping, sample already exists on EcoTaxa")
-            continue
+        # Skip the samples that already exist (unless updating)
+        if not update:
+            new_zip_paths = [z for z, sid in zip(batch_zip_paths, sample_ids) if sid not in existing_samples]
+            skipped = len(batch_zip_paths) - len(new_zip_paths)
+            if skipped:
+                logger.info(f"  Skipping {skipped} sample(s) that already exist on EcoTaxa")
+            if not new_zip_paths:
+                continue
+            batch_zip_paths = new_zip_paths
+            sample_ids = [z.stem.replace("ecotaxa_", "") for z in batch_zip_paths]
 
-        # If we only update, we need to extract the TSV and re-zip it
-        # because the API expects a zip file but we only want to upload the updated TSV
-        if update:
-            zip_path = _extract_tsv_in_new_zip(zip_path, logger)
-        
+        # Prepare the zip to upload:
+        # - update mode: extract only TSVs from each zip and combine them
+        # - normal mode: combine all zip contents into one zip
+        if len(batch_zip_paths) == 1 and not update:
+            # Single file – no aggregation needed
+            zip_path = batch_zip_paths[0]
+        elif update:
+            # Combine TSV-only zips for the update
+            tsv_zips = [_extract_tsv_in_new_zip(z, logger) for z in batch_zip_paths]
+            tsv_zips = [z for z in tsv_zips if z is not None]
+            if not tsv_zips:
+                logger.warning("  No TSV files found in batch, skipping")
+                continue
+            zip_path = _create_batch_zip(tsv_zips, logger) if len(tsv_zips) > 1 else tsv_zips[0]
+        else:
+            zip_path = _create_batch_zip(batch_zip_paths, logger)
+
         # Upload via TUS (resumable, with live progress)
         logger.info(f"  Uploading '{zip_path.name}' (" + ("metadata only; " if update else "") + f"{format_file_size(zip_path.stat().st_size)})...")
         upload_result = ecotaxa.upload_file_tus(api_url, token, zip_path, logger=logger)
@@ -118,7 +155,7 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
         logger.info(f"  ✔︎ Upload completed")
         
         # Import
-        logger.debug(f"Importing {sample_id}")
+        logger.debug(f"Importing batch: {sample_ids}")
         server_directory = Path(server_path).stem
         import_result = ecotaxa.import_file(api_url, project_id, token, server_directory,
                                             update_mode="Yes" if update else "", logger=logger)

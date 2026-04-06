@@ -83,6 +83,7 @@ To know which options are available for a given command
 cytoprocess command --help
 ```
 
+
 ### Creating and populating a project
 
 Use
@@ -116,8 +117,13 @@ To check how far along the processing of each sample is, use
 cytoprocess status path/to/project
 ```
 
-### Detailed usage
+When several samples have been prepared, you can upload them in batches to EcoTaxa with
 
+```bash
+cytoprocess upload path/to/project
+```
+
+### Detailed usage
 
 If you want to know the details, or proceed manually, the steps behind `all` are:
 
@@ -137,11 +143,7 @@ cytoprocess extract_images path/to/project
 
 # prepare files for ecotaxa upload
 cytoprocess prepare path/to/project
-# upload them to EcoTaxa
-cytoprocess upload path/to/project
 ```
-
-
 
 #### Process a subset of samples
 
@@ -157,6 +159,7 @@ cytoprocess --sample '*foo*' command path/to/project
 which process all samples whose name contains foo.
 
 All commands will skip the processing of a given sample if the output is already present. To re-process and overwrite, use the `--force` option.
+
 
 #### Define new metadata
 
@@ -188,6 +191,7 @@ For each sample, this will pass two arguments to your function:
 Your function should return a DataFrame (or a dictionary that can be converted to one) with rows matching the input images (same number, same order) and at least one column called 'annotation_category' containing the predicted EcoTaxa category name for each image.
 
 NB: If you use deep learning approaches, remember that the images all have a 31 px high scale bar at the bottom which should be removed before processing the image (typically, at the very beginning of the your data loader).
+
 
 ### Cleaning up after processing
 
@@ -231,7 +235,7 @@ Commands:
   extract_images    Extract images from .json files.
   prepare           Prepare .tsv and images for EcoTaxa.
   upload            Upload files to EcoTaxa.
-  all               Run all steps from convert to upload in sequence.
+  all               Run all steps from convert to prepare in sequence.
   status            Show per-sample processing status.
   clean             Remove intermediate files in the project.
   predict           Run a user-provided model to predict classifications.
@@ -415,11 +419,17 @@ Usage: cytoprocess upload [OPTIONS] PROJECT
   metadata after editing samples.csv: it only requires to re-run the `prepare`
   step and then `upload --update`.
 
+  Multiple samples can be aggregated into a single upload using `--batch`. The
+  samples are combined into one zip file, uploaded, and imported together. This
+  is usually faster than uploading sample per sample.
+
 Options:
-  -u, --username TEXT  EcoTaxa email address.
-  -p, --password TEXT  EcoTaxa password.
-  --update             Only update the metadata for existing samples.
-  --help               Show this message and exit.
+  -u, --username TEXT        EcoTaxa email address.
+  -p, --password TEXT        EcoTaxa password.
+  --update                   Only update the metadata for existing samples.
+  -b, --batch INTEGER RANGE  Number of samples to aggregate into a single upload
+                             (default: 10).  [x>=1]
+  --help                     Show this message and exit.
 
 ```
 
@@ -427,7 +437,7 @@ Options:
 
 Usage: cytoprocess all [OPTIONS] PROJECT
 
-  Run all steps from convert to upload in sequence.
+  Run all steps from convert to prepare in sequence.
 
 Options:
   -f, --force              Force processing even if output already exists.
