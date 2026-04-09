@@ -121,34 +121,24 @@ def _download_latest_release(logger: logging.Logger) -> str:
         # create symlink in bin_dir
         # define symkink source and name
         executable_path = cyz2json_dir / _get_executable_name()
-        symlink_path = bin_dir / _get_executable_name()
         
         # make the exectuable actually executable
         logger.debug(f"Setting execute permissions for {executable_path}")
         os.chmod(executable_path, 0o755)
 
-        # remove existing symlink if it exists
-        if symlink_path.exists() or symlink_path.is_symlink():
-            logger.debug(f"Removing existing symlink at {symlink_path}")
-            symlink_path.unlink()
-        
-        # create symlink
-        logger.debug(f"Creating symlink at {symlink_path} -> {executable_path}")
-        os.symlink(executable_path, symlink_path)
-
-        logger.debug(f"Successfully installed cyz2json to {symlink_path}")
+        logger.debug(f"Successfully installed cyz2json to {executable_path}")
     
     except Exception as e:
         raiseCytoError(f"Failed to download and install cyz2json: {e}", logger)
     
-    return str(symlink_path)
+    return str(executable_path)
 
 
 def _check_or_get_cyz2json(logger: logging.Logger, force: bool = False) -> str:
     """Get the path to the cyz2json executable, downloading if necessary."""
     bin_dir = _get_or_create_bin_dir()
     executable_name = _get_executable_name()
-    executable_path = bin_dir / executable_name
+    executable_path = bin_dir / "cyz2json_dlls" / executable_name
 
     if force:
         logger.info("Downloading latest cyz2json release")
