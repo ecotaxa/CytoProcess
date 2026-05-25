@@ -57,6 +57,7 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
     check_project_integrity(project, logger)
 
     # Load config from project
+    logger.debug(f"Loading configuration from '{project / 'config' / 'config.yaml'}'")
     config_path =  project / "config" / "config.yaml"
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f) or {}
@@ -69,6 +70,7 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
     if not project_id:
         raiseCytoError(f"EcoTaxa project_id missing from '{config_path}'\nEdit the file to set 'ecotaxa: project_id'\nYou can find your EcoTaxa numeric project ID in the table at\n  {eco_url}/prj", logger)
 
+    logger.debug(f"Creating output directory")
     ecotaxa_dir = project / "ecotaxa"
     ecotaxa_dir.mkdir(parents=True, exist_ok=True)
     
