@@ -198,6 +198,9 @@ def run(ctx: click.Context, project: Path, list_keys=False, force=False):
                                              'acq_imaging_ratio': 0,
                                              'acq_imaged_volume_uL': 0,
                                              'acq_analysed_volume_uL': 0}, index=[0])
+                # Dummy sets_stats_df if sets is not None but is empty.
+                sets_stats_df = set_stats_df.copy()
+                
                 if sets is None:
                     logger.warning(f"No set information found in '{json_file.name}'; CytoProcess will not be able to compute subsampling factors.")
                 else:
