@@ -194,11 +194,11 @@ def run(ctx: click.Context, project: Path, list_keys=False, force=False):
                 # This creates one acquisition per set and we later link each particle to its acquisition
                 sets = get_json_section(json_file, 'set_information', logger)
                 # default acquisition
-                set_stats_df = pd.DataFrame({'name': sample_id,
+                sets_stats_df = pd.DataFrame({'name': sample_id,
                                              'acq_imaging_ratio': 0,
                                              'acq_imaged_volume_uL': 0,
                                              'acq_analysed_volume_uL': 0}, index=[0])
-                if sets is None:
+                if sets is None or len(sets.get("statistics")) == 0:
                     logger.warning(f"No set information found in '{json_file.name}'; CytoProcess will not be able to compute subsampling factors.")
                 else:
                     # Keep only sets with images and a valid imaged_volume
@@ -210,7 +210,7 @@ def run(ctx: click.Context, project: Path, list_keys=False, force=False):
                         imaging_ratio = s['images'] / s['count']
                         analysed_volume = s['imaged_volume'] / imaging_ratio
                         sets_stats_df = pd.concat([
-                            set_stats_df,
+                            sets_stats_df,
                             pd.DataFrame({'name': s['name'],
                                           'acq_imaging_ratio': imaging_ratio,
                                           'acq_imaged_volume_uL': s['imaged_volume'],
