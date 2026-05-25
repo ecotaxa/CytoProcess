@@ -176,7 +176,7 @@ def run(ctx: click.Context, project: Path, username: str | None = None, password
         logger.info(f"  Import started (job ID: {job_id}), monitoring progress...")
         
         # Monitor job until completion
-        success = ecotaxa.monitor_job(api_url, job_id, token, logger=logger)
+        success = ecotaxa.monitor_job(api_url, job_id, token, logger=logger, poll_interval=5)
         if success:
             logger.info(f"  ✔︎ Import completed")
         else:
